@@ -22,7 +22,7 @@ import {
   isUserExpired,
   daysUntilExpiry
 } from '@/lib/mikrotik';
-import { AlertCircle, Clock, Trash2, Power, Edit, Wifi, Calendar, Tag, MessageSquare, Download, Upload, User, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Clock, Trash2, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle } from 'lucide-react';
 
 interface PPPoEUserCardProps {
   user: MikrotikPPPoEUser;
@@ -61,9 +61,10 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
         disabled: !user.disabled
       });
       onUpdate();
-    } catch (err: any) {
-      setError(`Failed to update user: ${err.message}`);
-      console.error('Toggle status error:', err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(`Failed to update user: ${error.message}`);
+      console.error('Toggle status error:', error);
     } finally {
       setLoading(false);
     }
@@ -80,9 +81,10 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
     try {
       await deletePPPoEUser(credentials, user.id);
       onUpdate();
-    } catch (err: any) {
-      setError(`Failed to delete user: ${err.message}`);
-      console.error('Delete user error:', err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(`Failed to delete user: ${error.message}`);
+      console.error('Delete user error:', error);
     } finally {
       setLoading(false);
     }

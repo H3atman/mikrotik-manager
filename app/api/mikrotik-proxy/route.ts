@@ -13,7 +13,17 @@ async function handleProxyRequest(request: NextRequest, method: string) {
   try {
     console.log(`Proxying ${method} request to: ${url}`);
     
-    const options: any = {
+    const options: {
+      method: string;
+      url: string;
+      headers: {
+        Authorization: string;
+        'Content-Type': string;
+      };
+      timeout: number;
+      validateStatus: (status: number) => boolean;
+      data?: Record<string, unknown>;
+    } = {
       method,
       url,
       headers: {
@@ -26,7 +36,7 @@ async function handleProxyRequest(request: NextRequest, method: string) {
     
     // Add body for methods that support it
     if (['POST', 'PUT', 'PATCH'].includes(method)) {
-      let body: Record<string, any>;
+      let body: Record<string, unknown>;
       try {
         body = await request.json();
         console.log('Request body:', body);
@@ -35,23 +45,26 @@ async function handleProxyRequest(request: NextRequest, method: string) {
         if (url.includes('/ppp/secret/') && method === 'PATCH' && 'comment' in body) {
           console.log('Detected PPP secret update with comment field');
           
-          // Ensure comment is a string
-          if (body.comment !== null && body.comment !== undefined) {
-            body.comment = String(body.comment);
+          // Ensure comment is a string or can be converted to a string
+          const comment = body.comment;
+          if (comment !== null && comment !== undefined) {
+            body.comment = String(comment);
             
             // Limit comment length
-            if (body.comment.length > 255) {
+            if (typeof body.comment === 'string' && body.comment.length > 255) {
               body.comment = body.comment.substring(0, 255);
               console.warn('Comment truncated to 255 characters');
             }
             
             // Escape special characters
-            body.comment = body.comment
-              .replace(/"/g, '')
-              .replace(/'/g, '')
-              .replace(/\\/g, '');
-            
-            console.log('Sanitized comment:', body.comment);
+            if (typeof body.comment === 'string') {
+              body.comment = body.comment
+                .replace(/"/g, '')
+                .replace(/'/g, '')
+                .replace(/\\/g, '');
+              
+              console.log('Sanitized comment:', body.comment);
+            }
           }
         }
         
@@ -103,13 +116,14 @@ async function handleProxyRequest(request: NextRequest, method: string) {
       }
       
       return NextResponse.json(response.data);
-    } catch (axiosError: any) {
-      console.error('Axios error:', axiosError.message);
+    } catch (axiosError: unknown) {
+      const error = axiosError as Error & { response?: { status: number; data: unknown } };
+      console.error('Axios error:', error.message);
       
       // Special handling for PPP secret updates with comment field
       if (url.includes('/ppp/secret/') && method === 'PATCH' && 
           options.data && 'comment' in options.data && 
-          axiosError.response?.status === 400) {
+          error.response?.status === 400) {
         
         console.log('Trying alternative approach for PPP secret update...');
         
@@ -134,28 +148,37 @@ async function handleProxyRequest(request: NextRequest, method: string) {
                 data: { comment: options.data.comment }
               });
               console.log('Comment update succeeded');
-            } catch (commentError) {
+            } catch {
               console.log('Comment update failed, but other fields were updated');
             }
             
             return NextResponse.json(response1.data);
-          } catch (alternativeError: any) {
-            console.error('Alternative approach failed:', alternativeError.message);
+          } catch (alternativeError: unknown) {
+            const error = alternativeError as Error & { message: string };
+            console.error('Alternative approach failed:', error.message);
           }
         }
       }
       
-      throw axiosError; // Re-throw to be caught by the outer catch
+      throw error; // Re-throw to be caught by the outer catch
     }
-  } catch (error: any) {
-    console.error('Proxy error:', error);
+  } catch (error: unknown) {
+    const err = error as Error & { 
+      response?: { 
+        status: number; 
+        statusText: string; 
+        data: unknown 
+      };
+      message: string;
+    };
+    console.error('Proxy error:', err);
     
     // Provide more detailed error information
     const errorResponse = {
-      error: error.message || 'Proxy request failed',
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
+      error: err.message || 'Proxy request failed',
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
       url: url // Include the URL that failed
     };
     
@@ -164,7 +187,7 @@ async function handleProxyRequest(request: NextRequest, method: string) {
     
     return NextResponse.json(
       errorResponse,
-      { status: error.response?.status || 500 }
+      { status: err.response?.status || 500 }
     );
   }
 }

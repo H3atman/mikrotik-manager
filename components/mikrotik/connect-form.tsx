@@ -65,11 +65,12 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
         setError('Could not connect to the router. Please check your credentials and network connection.');
         setDebugInfo('Connection test returned false. The router did not respond correctly.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       setError('Connection error. Make sure you are on the same network or connected via ZeroTier.');
       // Add detailed error information
-      setDebugInfo(`Error details: ${err.message || 'Unknown error'}`);
-      console.error('Connection error:', err);
+      setDebugInfo(`Error details: ${error.message || 'Unknown error'}`);
+      console.error('Connection error:', error);
     } finally {
       setLoading(false);
     }

@@ -118,9 +118,10 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
       
       await addPPPoEUser(credentials, userToSubmit);
       onSuccess();
-    } catch (err: any) {
-      setError(`Failed to add user: ${err.message}`);
-      console.error('Add user error:', err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(`Failed to add user: ${error.message}`);
+      console.error('Add user error:', error);
     } finally {
       setLoading(false);
     }

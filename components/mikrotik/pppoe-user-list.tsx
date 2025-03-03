@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -33,25 +33,26 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
   const [expiryMessage, setExpiryMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
       const userData = await fetchPPPoEUsers(credentials);
       setUsers(userData);
-    } catch (err: any) {
-      setError(`Failed to load PPPoE users: ${err.message}`);
-      console.error('Load users error:', err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(`Failed to load PPPoE users: ${error.message}`);
+      console.error('Load users error:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [credentials]);
   
   // Load users on component mount
   useEffect(() => {
     loadUsers();
-  }, [credentials]);
+  }, [credentials, loadUsers]);
   
   const handleAddSuccess = () => {
     setShowAddForm(false);
@@ -98,9 +99,10 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
       
       // Reload users to reflect changes
       loadUsers();
-    } catch (err: any) {
-      setExpiryMessage(`Error processing expired users: ${err.message}`);
-      console.error('Process expiry error:', err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setExpiryMessage(`Error processing expired users: ${error.message}`);
+      console.error('Process expiry error:', error);
     } finally {
       setProcessingExpiry(false);
     }

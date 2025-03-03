@@ -24,13 +24,14 @@ export async function POST(request: NextRequest) {
         ? `Successfully processed ${processedCount} expired user(s)` 
         : 'No expired users found to process'
     });
-  } catch (error: any) {
-    console.error('Error processing expired users:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error processing expired users:', err);
     
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Unknown error occurred' 
+        error: err.message || 'Unknown error occurred' 
       },
       { status: 500 }
     );

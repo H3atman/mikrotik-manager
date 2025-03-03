@@ -10,7 +10,6 @@ import {
   CardDescription
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MikrotikCredentials, 
@@ -22,7 +21,7 @@ import {
   parsePostExpiryProfile,
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
-import { Calendar, Clock, AlertCircle, Save, X, User, Tag, Info } from 'lucide-react';
+import { AlertCircle, Save, X, User, Tag, Info } from 'lucide-react';
 
 interface PPPoEExpiryFormProps {
   user: MikrotikPPPoEUser;
@@ -111,10 +110,16 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           name: user.name // Include name to help find the correct user
         });
         success = true;
-      } catch (error: any) {
-        console.error('Approach 1 failed:', error);
-        console.error('Error details:', error.response?.data || error.message);
-        lastError = error;
+      } catch (error: unknown) {
+        const err = error as Error & { 
+          response?: { 
+            data: unknown;
+            status?: number;
+          } 
+        };
+        console.error('Approach 1 failed:', err);
+        console.error('Error details:', err.response?.data || err.message);
+        lastError = err;
       }
       
       // Approach 2: Try with just the tags in bracket format
@@ -127,10 +132,16 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             name: user.name // Include name to help find the correct user
           });
           success = true;
-        } catch (error: any) {
-          console.error('Approach 2 failed:', error);
-          console.error('Error details:', error.response?.data || error.message);
-          lastError = error;
+        } catch (error: unknown) {
+          const err = error as Error & { 
+            response?: { 
+              data: unknown;
+              status?: number;
+            } 
+          };
+          console.error('Approach 2 failed:', err);
+          console.error('Error details:', err.response?.data || err.message);
+          lastError = err;
         }
       }
       
@@ -143,10 +154,16 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             name: user.name // Include name to help find the correct user
           });
           success = true;
-        } catch (error: any) {
-          console.error('Approach 3 failed:', error);
-          console.error('Error details:', error.response?.data || error.message);
-          lastError = error;
+        } catch (error: unknown) {
+          const err = error as Error & { 
+            response?: { 
+              data: unknown;
+              status?: number;
+            } 
+          };
+          console.error('Approach 3 failed:', err);
+          console.error('Error details:', err.response?.data || err.message);
+          lastError = err;
         }
       }
       
@@ -159,10 +176,16 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             name: user.name // Include name to help find the correct user
           });
           success = true;
-        } catch (error: any) {
-          console.error('Approach 4 failed:', error);
-          console.error('Error details:', error.response?.data || error.message);
-          lastError = error;
+        } catch (error: unknown) {
+          const err = error as Error & { 
+            response?: { 
+              data: unknown;
+              status?: number;
+            } 
+          };
+          console.error('Approach 4 failed:', err);
+          console.error('Error details:', err.response?.data || err.message);
+          lastError = err;
         }
       }
       
@@ -171,19 +194,25 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
       } else {
         throw lastError || new Error('All update approaches failed');
       }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Unknown error occurred';
+    } catch (err: unknown) {
+      const error = err as Error & {
+        response?: {
+          status: number;
+          data: unknown;
+        };
+      };
+      const errorMessage = error.message || 'Unknown error occurred';
       setError(`Failed to update expiry: ${errorMessage}`);
-      console.error('Update expiry error:', err);
+      console.error('Update expiry error:', error);
       
       // Show more detailed error information
-      if (err.response) {
-        console.error('Response status:', err.response.status);
-        console.error('Response data:', err.response.data);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
         
         // Add more details to the error message
-        if (err.response.data) {
-          setError(`Failed to update expiry: ${errorMessage}. Server response: ${JSON.stringify(err.response.data)}`);
+        if (error.response.data) {
+          setError(`Failed to update expiry: ${errorMessage}. Server response: ${JSON.stringify(error.response.data)}`);
         }
       }
     } finally {
@@ -198,7 +227,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           <User className="h-4 w-4 text-blue-500" />
           <div>
             <CardTitle className="text-lg">Manage Expiry for <span className="text-blue-500">{user.name}</span></CardTitle>
-            <CardDescription className="text-xs">Set when this user's subscription will expire</CardDescription>
+            <CardDescription className="text-xs">Set when this user&apos;s subscription will expire</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -213,36 +242,26 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           )}
           
           <div className="space-y-2">
-            <label htmlFor="expiryDateTime" className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="h-3.5 w-3.5 text-blue-500" />
-              Expiry Date and Time
+            <label className="text-sm font-medium">
+              Current Profile: <span className="text-blue-500">{user.profile || 'default'}</span>
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="relative">
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  required
-                  className="pl-8 h-9 text-sm focus-visible:ring-blue-500"
-                />
-                <Calendar className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              </div>
-              <div className="relative">
-                <Input
-                  id="expiryTime"
-                  type="time"
-                  value={expiryTime}
-                  onChange={(e) => setExpiryTime(e.target.value)}
-                  required
-                  className="pl-8 h-9 text-sm focus-visible:ring-blue-500"
-                />
-                <Clock className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              </div>
-            </div>
-            <p className="text-xs text-slate-500">
-              When this date and time is reached, the user's profile will be changed automatically
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Post-expiry Profile: <span className="text-blue-500">{postExpiryProfile}</span>
+            </label>
+            <p className="text-xs text-gray-500">
+              This profile will be applied when the user&apos;s account expires
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Expiry Date and Time: <span className="text-blue-500">{expiryDate} {expiryTime}</span>
+            </label>
+            <p className="text-xs text-gray-500">
+              The user&apos;s account will be restricted after this date and time
             </p>
           </div>
           
@@ -268,7 +287,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
               <Tag className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             </div>
             <p className="text-xs text-slate-500">
-              The profile that will be applied after expiry
+              When this date and time is reached, the user&apos;s profile will be changed automatically
             </p>
           </div>
           
@@ -276,7 +295,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             <div className="flex items-start gap-2">
               <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
               <p className="text-slate-600 leading-relaxed">
-                This will store expiry information in the user's comment field. The system will automatically change the profile when the expiry date and time is reached.
+                This will store expiry information in the user&apos;s comment field. The system will automatically change the profile when the expiry date and time is reached.
               </p>
             </div>
           </div>

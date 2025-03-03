@@ -275,7 +275,7 @@ export const updatePPPoEUser = async (
   
   try {
     // Ensure we're only sending valid fields
-    const validUpdates: Record<string, any> = {};
+    const validUpdates: Record<string, string | boolean> = {};
     
     // Only include fields that are defined and non-null
     if (updates.name !== undefined && updates.name !== null) validUpdates.name = updates.name;
@@ -370,11 +370,17 @@ export const updatePPPoEUser = async (
       
       console.log('Update response status:', response.status);
       return true;
-    } catch (directError: any) {
-      console.error('Direct API call failed:', directError.message);
+    } catch (directError: unknown) {
+      const error = directError as Error & {
+        response?: {
+          status: number;
+          data: unknown;
+        };
+      };
+      console.error('Direct API call failed:', error.message);
       
       // If the error is related to the comment field, try updating without it
-      if ('comment' in validUpdates && directError.response?.status === 400) {
+      if ('comment' in validUpdates && error.response?.status === 400) {
         console.log('Trying update without comment field...');
         
         // Create a copy without the comment field
@@ -383,7 +389,7 @@ export const updatePPPoEUser = async (
         
         // Only proceed if there are other fields to update
         if (Object.keys(updatesWithoutComment).length > 0) {
-          const response = await axios({
+          await axios({
             method: 'PATCH',
             url: getApiUrl(address, `ppp/secret/${id}`),
             headers: {
@@ -410,31 +416,24 @@ export const updatePPPoEUser = async (
             console.log('Comment update succeeded!');
             return true;
           } catch (commentError) {
-            console.error('Comment update failed, but other fields were updated');
+            console.error('Comment update failed, but other fields were updated:', commentError);
             return true; // Return success since the main update worked
           }
         }
       }
       
       // If we got here, rethrow the original error
-      throw directError;
+      throw error;
     }
-  } catch (error: any) {
-    console.error('Failed to update PPPoE user:', error);
-    
-    // Enhanced error logging
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
-    }
-    
-    // Throw a more informative error
-    throw new Error(
-      error.response?.data?.message || 
-      error.response?.statusText || 
-      error.message || 
-      'Unknown error updating PPPoE user'
-    );
+  } catch (error: unknown) {
+    const err = error as Error & {
+      response?: {
+        status: number;
+        data: unknown;
+      };
+    };
+    console.error('Failed to update PPPoE user:', err);
+    throw err;
   }
 };
 
@@ -686,7 +685,7 @@ export const processExpiredUsers = async (credentials: MikrotikCredentials): Pro
             }
           });
           console.log(`Disconnected active session for user: ${user.name}`);
-        } catch (error) {
+        } catch {
           // Ignore errors when disconnecting - user might not be connected
           console.log(`User ${user.name} not connected or error disconnecting`);
         }
