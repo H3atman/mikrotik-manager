@@ -114,6 +114,11 @@ cloudflared.exe service install
    }
    ```
 
+3. With this configuration, the application will:
+   - Hide the router IP address field in the connection form
+   - Use only username and password for authentication
+   - Connect directly through your Cloudflare Tunnel
+
 ## Troubleshooting
 
 ### Tunnel Not Connecting
@@ -122,6 +127,34 @@ Check the logs with:
 ```bash
 cloudflared tunnel info mikrotik-tunnel
 ```
+
+### CORS Issues in Development Mode
+
+If you're running the application in development mode (`localhost:3000`) and getting network errors like:
+
+```
+AxiosError: Network Error
+```
+
+This is likely due to CORS (Cross-Origin Resource Sharing) restrictions. The browser is preventing your local application from making direct requests to your Cloudflare Tunnel domain.
+
+The application should automatically use the proxy in development mode to avoid CORS issues. If you're still experiencing problems:
+
+1. Make sure your `.env.local` file has the correct configuration:
+   ```
+   NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL=true
+   ```
+
+2. Check the browser console for more detailed error messages
+
+3. Verify that the proxy route is working by visiting:
+   ```
+   http://localhost:3000/api/mikrotik-proxy?url=https://your-tunnel-domain.com/rest/system/resource
+   ```
+   
+   You should see a 401 Unauthorized error (which is expected without proper credentials)
+
+4. If you're still having issues, try clearing your browser cache or using an incognito/private window
 
 ### Certificate Issues
 

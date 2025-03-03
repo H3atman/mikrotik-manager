@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -17,7 +17,7 @@ import {
   testConnection, 
   saveCredentials 
 } from '@/lib/mikrotik';
-import { Wifi, User, Lock, AlertCircle, Server, ArrowRight } from 'lucide-react';
+import { Wifi, User, Lock, AlertCircle, Server, ArrowRight, Cloud } from 'lucide-react';
 
 interface ConnectFormProps {
   onConnect: (credentials: MikrotikCredentials) => void;
@@ -25,6 +25,7 @@ interface ConnectFormProps {
 }
 
 export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps) {
+  const [usingCloudflare, setUsingCloudflare] = useState(false);
   const [credentials, setCredentials] = useState<MikrotikCredentials>({
     address: initialValues.address || '10.0.0.1',
     username: initialValues.username || 'admin',
@@ -34,6 +35,20 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  
+  // Check if we're using Cloudflare Tunnel
+  useEffect(() => {
+    const isUsingTunnel = process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true';
+    setUsingCloudflare(isUsingTunnel);
+    
+    // If using Cloudflare Tunnel, set a placeholder address
+    if (isUsingTunnel) {
+      setCredentials(prev => ({
+        ...prev,
+        address: 'cloudflare-tunnel'
+      }));
+    }
+  }, []);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,7 +63,7 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
     
     try {
       // Add debug info
-      setDebugInfo(`Attempting to connect to ${credentials.address}...`);
+      setDebugInfo(`Attempting to connect ${usingCloudflare ? 'via Cloudflare Tunnel' : `to ${credentials.address}`}...`);
       
       const connected = await testConnection(credentials);
       
@@ -66,10 +81,31 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
         setDebugInfo('Connection test returned false. The router did not respond correctly.');
       }
     } catch (err: unknown) {
-      const error = err as Error;
-      setError('Connection error. Make sure you are on the same network or connected via ZeroTier.');
-      // Add detailed error information
-      setDebugInfo(`Error details: ${error.message || 'Unknown error'}`);
+      const error = err as Error & { code?: string };
+      
+      // Check for network errors which are often CORS-related in development
+      if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+        if (usingCloudflare) {
+          setError('Network error connecting to Cloudflare Tunnel. This may be due to CORS restrictions.');
+          setDebugInfo(`
+If you're running in development mode, this is likely a CORS issue.
+Make sure:
+1. Your Cloudflare Tunnel is running and accessible
+2. Try clearing your browser cache or using an incognito window
+3. Check the browser console for more detailed error messages
+          `);
+        } else {
+          setError('Network error. Make sure you are on the same network or connected via ZeroTier.');
+          setDebugInfo(`Error details: Network Error - Cannot reach the router at ${credentials.address}`);
+        }
+      } else {
+        setError(usingCloudflare 
+          ? 'Connection error. Make sure your Cloudflare Tunnel is running properly.' 
+          : 'Connection error. Make sure you are on the same network or connected via ZeroTier.');
+        // Add detailed error information
+        setDebugInfo(`Error details: ${error.message || 'Unknown error'}`);
+      }
+      
       console.error('Connection error:', error);
     } finally {
       setLoading(false);
@@ -81,12 +117,20 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
       <CardHeader className="space-y-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
         <div className="flex items-center justify-center mb-2">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center">
-            <Server className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+            {usingCloudflare ? (
+              <Cloud className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+            ) : (
+              <Server className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+            )}
           </div>
         </div>
-        <CardTitle className="text-xl sm:text-2xl font-bold text-center">Connect to Mikrotik</CardTitle>
+        <CardTitle className="text-xl sm:text-2xl font-bold text-center">
+          {usingCloudflare ? 'Connect via Cloudflare' : 'Connect to Mikrotik'}
+        </CardTitle>
         <CardDescription className="text-center text-sm">
-          Enter your router details to manage PPPoE users
+          {usingCloudflare 
+            ? 'Enter your router credentials to connect via Cloudflare Tunnel' 
+            : 'Enter your router details to manage PPPoE users'}
         </CardDescription>
       </CardHeader>
       
@@ -104,24 +148,26 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
             </Alert>
           )}
           
-          <div className="space-y-2">
-            <label htmlFor="address" className="text-sm font-medium flex items-center gap-2">
-              <Wifi className="h-3.5 w-3.5 text-blue-500" />
-              Router IP Address
-            </label>
-            <Input
-              id="address"
-              name="address"
-              value={credentials.address}
-              onChange={handleChange}
-              placeholder="192.168.88.1"
-              required
-              className="focus-visible:ring-blue-500 h-9 text-sm"
-            />
-            <p className="text-xs text-muted-foreground pl-6">
-              IP address of your Mikrotik router on your local or ZeroTier network
-            </p>
-          </div>
+          {!usingCloudflare && (
+            <div className="space-y-2">
+              <label htmlFor="address" className="text-sm font-medium flex items-center gap-2">
+                <Wifi className="h-3.5 w-3.5 text-blue-500" />
+                Router IP Address
+              </label>
+              <Input
+                id="address"
+                name="address"
+                value={credentials.address}
+                onChange={handleChange}
+                placeholder="192.168.88.1"
+                required
+                className="focus-visible:ring-blue-500 h-9 text-sm"
+              />
+              <p className="text-xs text-muted-foreground pl-6">
+                IP address of your Mikrotik router on your local or ZeroTier network
+              </p>
+            </div>
+          )}
           
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium flex items-center gap-2">
@@ -158,7 +204,9 @@ export function ConnectForm({ onConnect, initialValues = {} }: ConnectFormProps)
             <AlertDescription className="flex items-start gap-2">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-blue-500" />
               <span>
-                Make sure your device is on the same network as your Mikrotik router or connected via ZeroTier with proper routes configured.
+                {usingCloudflare 
+                  ? 'Connecting via Cloudflare Tunnel. Make sure your tunnel is properly configured and running.' 
+                  : 'Make sure your device is on the same network as your Mikrotik router or connected via ZeroTier with proper routes configured.'}
               </span>
             </AlertDescription>
           </Alert>

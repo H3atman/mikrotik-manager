@@ -65,3 +65,4 @@ This application supports using Cloudflare Tunnel to securely access your MikroT
 - No need to expose your router directly to the internet
 - Works with cloud deployments like Vercel
 - Maintains end-to-end encryption
+- Simplified connection form (only username and password required)

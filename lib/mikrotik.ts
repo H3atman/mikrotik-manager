@@ -40,14 +40,25 @@ export const createAuthHeader = (username: string, password: string) => {
 
 // Helper to handle CORS issues in development
 const getApiUrl = (address: string, endpoint: string) => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isUsingTunnel = process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true';
+  
   // If we're using the Cloudflare Tunnel
-  if (process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true') {
+  if (isUsingTunnel) {
     // Use the Cloudflare Tunnel URL
-    return `https://rg-networks.rvcodes.com/rest/${endpoint}`;
+    const tunnelUrl = `https://rg-networks.rvcodes.com/rest/${endpoint}`;
+    
+    // In development, use the proxy to avoid CORS issues
+    if (isDevelopment) {
+      return `/api/mikrotik-proxy?url=${encodeURIComponent(tunnelUrl)}`;
+    }
+    
+    // In production, connect directly to the Cloudflare Tunnel
+    return tunnelUrl;
   }
   
   // Check if we're in development mode
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevelopment) {
     // Use a CORS proxy for development
     return `/api/mikrotik-proxy?url=${encodeURIComponent(`http://${address}/rest/${endpoint}`)}`;
   }
@@ -62,9 +73,29 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
   const authHeader = createAuthHeader(username, password);
   
   try {
+    // If using Cloudflare Tunnel, we don't need the address from credentials
+    const isUsingTunnel = process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true';
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    let url;
+    if (isUsingTunnel) {
+      if (isDevelopment) {
+        // In development, use the proxy to avoid CORS issues
+        url = `/api/mikrotik-proxy?url=${encodeURIComponent(`https://rg-networks.rvcodes.com/rest/system/resource`)}`;
+      } else {
+        // In production, connect directly to the Cloudflare Tunnel
+        url = `https://rg-networks.rvcodes.com/rest/system/resource`;
+      }
+    } else {
+      // Not using tunnel, use the normal getApiUrl function
+      url = getApiUrl(address, 'system/resource');
+    }
+    
+    console.log('Connection test URL:', url);
+    
     await axios({
       method: 'GET',
-      url: getApiUrl(address, 'system/resource'),
+      url,
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
@@ -73,7 +104,7 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
     });
     
     // If using Cloudflare Tunnel, save the tunnel URL instead of the address
-    if (process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true') {
+    if (isUsingTunnel) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('mikrotik_using_tunnel', 'true');
       }
