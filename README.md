@@ -34,3 +34,34 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Remote Access with Cloudflare Tunnel
+
+This application supports using Cloudflare Tunnel to securely access your MikroTik router from anywhere, even when deployed on Vercel or other cloud platforms.
+
+### Setup Instructions
+
+1. **Set up Cloudflare Tunnel**:
+   - Install `cloudflared` on a device in your local network
+   - Create a tunnel pointing to your MikroTik router's web interface
+   - Configure your tunnel with a domain like `your-router.yourdomain.com`
+   - For detailed instructions, see [Cloudflare Tunnel Setup Guide](docs/CLOUDFLARE-TUNNEL-SETUP.md)
+
+2. **Configure the Application**:
+   - In your Vercel deployment, set the environment variable:
+     ```
+     NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL=true
+     ```
+   - Update the URL in `lib/mikrotik.ts` to match your Cloudflare Tunnel domain
+
+3. **Local Development**:
+   - Create a `.env.local` file based on `.env.local.example`
+   - Set `NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL=false` for direct local access
+   - Or set `NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL=true` to test with your tunnel
+
+### Benefits
+
+- Securely access your MikroTik router from anywhere
+- No need to expose your router directly to the internet
+- Works with cloud deployments like Vercel
+- Maintains end-to-end encryption

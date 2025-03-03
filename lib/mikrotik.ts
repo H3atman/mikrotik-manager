@@ -40,6 +40,12 @@ export const createAuthHeader = (username: string, password: string) => {
 
 // Helper to handle CORS issues in development
 const getApiUrl = (address: string, endpoint: string) => {
+  // If we're using the Cloudflare Tunnel
+  if (process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true') {
+    // Use the Cloudflare Tunnel URL
+    return `https://rg-networks.rvcodes.com/rest/${endpoint}`;
+  }
+  
   // Check if we're in development mode
   if (process.env.NODE_ENV === 'development') {
     // Use a CORS proxy for development
@@ -65,6 +71,14 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
       },
       timeout: 5000
     });
+    
+    // If using Cloudflare Tunnel, save the tunnel URL instead of the address
+    if (process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true') {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mikrotik_using_tunnel', 'true');
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Connection test failed:', error);
@@ -148,7 +162,13 @@ export const toggleInterface = async (
 // Save credentials to localStorage (except password)
 export const saveCredentials = (credentials: Omit<MikrotikCredentials, 'password'>) => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('mikrotik_address', credentials.address);
+    // If using Cloudflare Tunnel, we don't need to store the actual address
+    if (process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true') {
+      localStorage.setItem('mikrotik_address', 'cloudflare-tunnel');
+    } else {
+      localStorage.setItem('mikrotik_address', credentials.address);
+    }
+    
     localStorage.setItem('mikrotik_username', credentials.username);
     localStorage.setItem('mikrotik_connected', 'true');
   }
@@ -177,6 +197,7 @@ export const hasStoredCredentials = (): boolean => {
 export const clearCredentials = () => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('mikrotik_connected');
+    localStorage.removeItem('mikrotik_using_tunnel');
   }
 };
 
