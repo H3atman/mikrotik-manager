@@ -6,9 +6,29 @@ async function handleProxyRequest(request: NextRequest, method: string) {
   const url = request.nextUrl.searchParams.get('url');
   const authorization = request.headers.get('Authorization');
   
+  // Enhanced logging for debugging auth issues
+  console.log('Proxy request received for URL:', url);
+  console.log('Authorization header present:', !!authorization);
+  if (authorization) {
+    console.log('Auth header type:', authorization.split(' ')[0]);
+    console.log('Auth header length:', authorization.length);
+  }
+  
   if (!url) {
     return NextResponse.json({ error: 'URL parameter is required' }, { 
       status: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
+  }
+  
+  if (!authorization) {
+    console.error('No Authorization header provided');
+    return NextResponse.json({ error: 'Authorization header is required' }, { 
+      status: 401,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',

@@ -35,7 +35,22 @@ export interface MikrotikPPPoEUser {
 
 // Create auth header
 export const createAuthHeader = (username: string, password: string) => {
-  return `Basic ${btoa(`${username}:${password}`)}`;
+  // In browser environments use btoa, in Node.js environments use Buffer
+  try {
+    // Browser environment
+    if (typeof window !== 'undefined' && typeof btoa === 'function') {
+      return `Basic ${btoa(`${username}:${password}`)}`;
+    } 
+    // Node.js environment (API routes)
+    else {
+      return `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
+    }
+  } catch (error) {
+    console.error('Error creating auth header:', error);
+    // Fallback method
+    const base64Credentials = Buffer.from(`${username}:${password}`).toString('base64');
+    return `Basic ${base64Credentials}`;
+  }
 };
 
 // Helper to handle CORS issues in development
@@ -75,6 +90,9 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
     if (isUsingTunnel) {
       // Always use the proxy to avoid CORS issues in both development and production
       url = `/api/mikrotik-proxy?url=${encodeURIComponent(`https://rg-networks.rvcodes.com/rest/system/resource`)}`;
+      
+      // Log authentication details for debugging (only username - never log passwords)
+      console.log('Using tunnel with username:', username);
     } else {
       // Not using tunnel, use the normal getApiUrl function
       url = getApiUrl(address, 'system/resource');
@@ -82,15 +100,20 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
     
     console.log('Connection test URL:', url);
     
-    await axios({
+    // Add additional logging to debug auth header (but don't show the full header which contains the password)
+    console.log('Auth header prefix:', authHeader.substring(0, 10) + '...');
+    
+    const response = await axios({
       method: 'GET',
       url,
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
-      timeout: 5000
+      timeout: 10000  // Increased timeout for production environment
     });
+    
+    console.log('Connection successful, response status:', response.status);
     
     // If using Cloudflare Tunnel, save the tunnel URL instead of the address
     if (isUsingTunnel) {
