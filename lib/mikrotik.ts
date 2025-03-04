@@ -70,7 +70,6 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
   try {
     // If using Cloudflare Tunnel, we don't need the address from credentials
     const isUsingTunnel = process.env.NEXT_PUBLIC_USE_CLOUDFLARE_TUNNEL === 'true';
-    const isDevelopment = process.env.NODE_ENV === 'development';
     
     let url;
     if (isUsingTunnel) {
