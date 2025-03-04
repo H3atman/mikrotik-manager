@@ -48,13 +48,8 @@ const getApiUrl = (address: string, endpoint: string) => {
     // Use the Cloudflare Tunnel URL
     const tunnelUrl = `https://rg-networks.rvcodes.com/rest/${endpoint}`;
     
-    // In development, use the proxy to avoid CORS issues
-    if (isDevelopment) {
-      return `/api/mikrotik-proxy?url=${encodeURIComponent(tunnelUrl)}`;
-    }
-    
-    // In production, connect directly to the Cloudflare Tunnel
-    return tunnelUrl;
+    // Always use the proxy to avoid CORS issues in both development and production
+    return `/api/mikrotik-proxy?url=${encodeURIComponent(tunnelUrl)}`;
   }
   
   // Check if we're in development mode
@@ -79,13 +74,8 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
     
     let url;
     if (isUsingTunnel) {
-      if (isDevelopment) {
-        // In development, use the proxy to avoid CORS issues
-        url = `/api/mikrotik-proxy?url=${encodeURIComponent(`https://rg-networks.rvcodes.com/rest/system/resource`)}`;
-      } else {
-        // In production, connect directly to the Cloudflare Tunnel
-        url = `https://rg-networks.rvcodes.com/rest/system/resource`;
-      }
+      // Always use the proxy to avoid CORS issues in both development and production
+      url = `/api/mikrotik-proxy?url=${encodeURIComponent(`https://rg-networks.rvcodes.com/rest/system/resource`)}`;
     } else {
       // Not using tunnel, use the normal getApiUrl function
       url = getApiUrl(address, 'system/resource');

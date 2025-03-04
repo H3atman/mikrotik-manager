@@ -7,7 +7,14 @@ async function handleProxyRequest(request: NextRequest, method: string) {
   const authorization = request.headers.get('Authorization');
   
   if (!url) {
-    return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 });
+    return NextResponse.json({ error: 'URL parameter is required' }, { 
+      status: 400,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+      }
+    });
   }
   
   try {
@@ -81,7 +88,14 @@ async function handleProxyRequest(request: NextRequest, method: string) {
           if (Object.keys(body).length === 0) {
             return NextResponse.json(
               { error: 'PATCH request must include at least one property to update' },
-              { status: 400 }
+              { 
+                status: 400,
+                headers: {
+                  'Access-Control-Allow-Origin': '*',
+                  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                }
+              }
             );
           }
         }
@@ -91,7 +105,14 @@ async function handleProxyRequest(request: NextRequest, method: string) {
         console.error('Error parsing request body:', parseError);
         return NextResponse.json(
           { error: 'Invalid JSON in request body' },
-          { status: 400 }
+          { 
+            status: 400,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+          }
         );
       }
     }
@@ -111,11 +132,24 @@ async function handleProxyRequest(request: NextRequest, method: string) {
             error: `MikroTik API returned ${response.status}`,
             details: response.data
           },
-          { status: response.status }
+          { 
+            status: response.status,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+          }
         );
       }
       
-      return NextResponse.json(response.data);
+      return NextResponse.json(response.data, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      });
     } catch (axiosError: unknown) {
       const error = axiosError as Error & { response?: { status: number; data: unknown } };
       console.error('Axios error:', error.message);
@@ -152,7 +186,13 @@ async function handleProxyRequest(request: NextRequest, method: string) {
               console.log('Comment update failed, but other fields were updated');
             }
             
-            return NextResponse.json(response1.data);
+            return NextResponse.json(response1.data, {
+              headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+              }
+            });
           } catch (alternativeError: unknown) {
             const error = alternativeError as Error & { message: string };
             console.error('Alternative approach failed:', error.message);
@@ -187,9 +227,29 @@ async function handleProxyRequest(request: NextRequest, method: string) {
     
     return NextResponse.json(
       errorResponse,
-      { status: err.response?.status || 500 }
+      { 
+        status: err.response?.status || 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
+      }
     );
   }
+}
+
+// Add an OPTIONS handler for preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400' // Cache preflight for 24 hours
+    },
+  });
 }
 
 export async function GET(request: NextRequest) {

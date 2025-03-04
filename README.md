@@ -66,3 +66,14 @@ This application supports using Cloudflare Tunnel to securely access your MikroT
 - Works with cloud deployments like Vercel
 - Maintains end-to-end encryption
 - Simplified connection form (only username and password required)
+- Built-in API proxy to avoid CORS issues in both development and production
+
+### How It Works
+
+The application uses a server-side API proxy to communicate with your MikroTik router through the Cloudflare Tunnel. This approach:
+
+1. Avoids CORS (Cross-Origin Resource Sharing) issues that would normally occur when your browser tries to directly access the Cloudflare Tunnel from a different domain
+2. Maintains security by proxying requests through your Next.js API routes
+3. Works seamlessly in both development and production environments
+
+For more details on how this works and troubleshooting information, see the [Cloudflare Tunnel Setup Guide](docs/CLOUDFLARE-TUNNEL-SETUP.md).

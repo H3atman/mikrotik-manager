@@ -62,6 +62,17 @@ credentials-file: /path/to/credentials/file.json
 ingress:
   - hostname: mikrotik.yourdomain.com
     service: http://192.168.88.1
+    originRequest:
+      originServerName: mikrotik.yourdomain.com
+    responseHeader:
+      - name: Access-Control-Allow-Origin
+        value: https://your-vercel-app.vercel.app
+      - name: Access-Control-Allow-Methods
+        value: GET, POST, PUT, DELETE, PATCH, OPTIONS
+      - name: Access-Control-Allow-Headers
+        value: Content-Type, Authorization
+      - name: Access-Control-Allow-Credentials
+        value: true
   - service: http_status:404
 ```
 
@@ -70,6 +81,7 @@ Replace:
 - `/path/to/credentials/file.json` with the actual path to your credentials file
 - `mikrotik.yourdomain.com` with your desired subdomain
 - `192.168.88.1` with your MikroTik router's local IP address
+- `https://your-vercel-app.vercel.app` with your actual Vercel app URL (e.g., `https://rg-networks.vercel.app`)
 
 ## Step 5: Create DNS Record
 
@@ -173,6 +185,73 @@ ingress:
 - Enable Cloudflare Zero Trust for additional security
 - Consider setting up Access policies to restrict who can access your MikroTik router
 - Use strong passwords for your MikroTik router admin account
+
+### CORS Issues in Production
+
+If you're experiencing CORS errors in your production Vercel deployment with messages like:
+
+```
+Access to XMLHttpRequest at 'https://your-tunnel.yourdomain.com/rest/system/resource' from origin 'https://your-app.vercel.app' has been blocked by CORS policy
+```
+
+You have two options:
+
+1. **Configure CORS headers in your Cloudflare Tunnel** (recommended for direct browser-to-tunnel communication):
+   - Update your Cloudflare Tunnel configuration as shown in Step 4 above
+   - Make sure to set the correct `Access-Control-Allow-Origin` value for your Vercel domain
+   - Restart your Cloudflare Tunnel after making these changes
+
+2. **Use the API proxy approach** (already implemented in the code):
+   - The application is configured to route all requests through the Next.js API proxy
+   - This avoids CORS issues by having the server make the requests instead of the browser
+   - No additional configuration is needed as this is the default behavior
+
+The second approach (API proxy) is already implemented in the code and should work without any additional configuration. However, if you prefer direct communication between the browser and your Cloudflare Tunnel, you'll need to configure the CORS headers as described in option 1.
+
+### Configuring CORS Headers with Token-Based Installation
+
+If you installed Cloudflare Tunnel using the token method (`cloudflared service install [TOKEN]`), you can still configure CORS headers by modifying the configuration file:
+
+1. Locate your configuration file:
+   - Linux: `/etc/cloudflared/config.yml`
+   - Windows: `%ProgramData%\cloudflared\config.yml`
+
+2. Edit the file (you'll need administrator/root privileges):
+   ```bash
+   # On Linux
+   sudo nano /etc/cloudflared/config.yml
+   
+   # On Windows (run PowerShell as Administrator)
+   notepad C:\ProgramData\cloudflared\config.yml
+   ```
+
+3. Add the responseHeader section to your configuration:
+   ```yaml
+   # Your existing config will have tunnel and credentials-file entries
+   # Add the ingress section with responseHeader:
+   ingress:
+     - hostname: rg-networks.rvcodes.com
+       service: http://YOUR_MIKROTIK_IP
+       responseHeader:
+         - name: Access-Control-Allow-Origin
+           value: https://rg-networks.vercel.app
+         - name: Access-Control-Allow-Methods
+           value: GET, POST, PUT, DELETE, PATCH, OPTIONS
+         - name: Access-Control-Allow-Headers
+           value: Content-Type, Authorization
+         - name: Access-Control-Allow-Credentials
+           value: true
+     - service: http_status:404
+   ```
+
+4. Restart the Cloudflare Tunnel service:
+   ```bash
+   # On Linux
+   sudo systemctl restart cloudflared
+   
+   # On Windows (run PowerShell as Administrator)
+   Restart-Service cloudflared
+   ```
 
 ## Additional Resources
 
