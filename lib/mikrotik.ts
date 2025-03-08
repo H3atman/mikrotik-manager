@@ -81,6 +81,7 @@ const getApiUrl = (address: string, endpoint: string) => {
 export const testConnection = async (credentials: MikrotikCredentials) => {
   const { address, username, password } = credentials;
   const authHeader = createAuthHeader(username, password);
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   try {
     // If using Cloudflare Tunnel, we don't need the address from credentials
@@ -91,19 +92,21 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
       // Always use the proxy to avoid CORS issues in both development and production
       url = `/api/mikrotik-proxy?url=${encodeURIComponent(`https://rg-networks.rvcodes.com/rest/system/resource`)}`;
       
-      // Log authentication details for debugging (only username - never log passwords)
-      console.log('Using tunnel with username:', username);
+      // Only log in development mode
+      if (isDevelopment) {
+        console.log('Using tunnel with username:', username);
+      }
     } else {
       // Not using tunnel, use the normal getApiUrl function
       url = getApiUrl(address, 'system/resource');
     }
     
-    console.log('Connection test URL:', url);
+    // Only log in development mode
+    if (isDevelopment) {
+      console.log('Connection test URL:', url);
+    }
     
-    // Add additional logging to debug auth header (but don't show the full header which contains the password)
-    console.log('Auth header prefix:', authHeader.substring(0, 10) + '...');
-    
-    const response = await axios({
+    await axios({
       method: 'GET',
       url,
       headers: {
@@ -112,8 +115,6 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
       },
       timeout: 10000  // Increased timeout for production environment
     });
-    
-    console.log('Connection successful, response status:', response.status);
     
     // If using Cloudflare Tunnel, save the tunnel URL instead of the address
     if (isUsingTunnel) {
@@ -124,6 +125,7 @@ export const testConnection = async (credentials: MikrotikCredentials) => {
     
     return true;
   } catch (error) {
+    // Keep error logging in all environments for troubleshooting
     console.error('Connection test failed:', error);
     return false;
   }
@@ -248,6 +250,7 @@ export const clearCredentials = () => {
 export const fetchPPPoEUsers = async (credentials: MikrotikCredentials) => {
   const { address, username, password } = credentials;
   const authHeader = createAuthHeader(username, password);
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   try {
     const response = await axios({
@@ -274,8 +277,10 @@ export const fetchPPPoEUsers = async (credentials: MikrotikCredentials) => {
           user.id = `pppoe-user-${index}`;
         }
         
-        // Debug log for disabled state
-        console.log(`Processing user ${user.name}, disabled state:`, user.disabled);
+        // Debug log for disabled state only in development mode
+        if (isDevelopment) {
+          console.log(`Processing user ${user.name}, disabled state:`, user.disabled);
+        }
         
         // Ensure other required properties exist
         return {
@@ -328,6 +333,146 @@ export const addPPPoEUser = async (
   }
 };
 
+// Helper function to prepare valid updates for a PPPoE user
+const prepareUserUpdates = (updates: Partial<Omit<MikrotikPPPoEUser, 'id'>>, isDevelopment: boolean): Record<string, string | boolean> => {
+  const validUpdates: Record<string, string | boolean> = {};
+  
+  // Only include fields that are defined and non-null
+  if (updates.name !== undefined && updates.name !== null) validUpdates.name = updates.name;
+  if (updates.password !== undefined && updates.password !== null) validUpdates.password = updates.password;
+  if (updates.service !== undefined && updates.service !== null) validUpdates.service = updates.service;
+  if (updates.profile !== undefined && updates.profile !== null) validUpdates.profile = updates.profile;
+  if (updates.disabled !== undefined && updates.disabled !== null) {
+    // Ensure disabled is a boolean
+    validUpdates.disabled = updates.disabled === true || String(updates.disabled) === 'true';
+    if (isDevelopment) {
+      console.log(`Setting disabled state to:`, validUpdates.disabled);
+    }
+  }
+  if (updates['caller-id'] !== undefined && updates['caller-id'] !== null) validUpdates['caller-id'] = updates['caller-id'];
+  if (updates.comment !== undefined) validUpdates.comment = updates.comment || ''; // Allow empty string
+  if (updates['limit-bytes-in'] !== undefined && updates['limit-bytes-in'] !== null) validUpdates['limit-bytes-in'] = updates['limit-bytes-in'];
+  if (updates['limit-bytes-out'] !== undefined && updates['limit-bytes-out'] !== null) validUpdates['limit-bytes-out'] = updates['limit-bytes-out'];
+  
+  // Special handling for comment field
+  if ('comment' in validUpdates) {
+    // Ensure comment is a string
+    validUpdates.comment = String(validUpdates.comment);
+    
+    // Limit comment length
+    if (validUpdates.comment.length > 255) {
+      validUpdates.comment = validUpdates.comment.substring(0, 255);
+      console.warn('Comment truncated to 255 characters');
+    }
+    
+    // Escape special characters
+    validUpdates.comment = validUpdates.comment
+      .replace(/"/g, '')
+      .replace(/'/g, '')
+      .replace(/\\/g, '');
+  }
+  
+  return validUpdates;
+};
+
+// Helper function to get the MikroTik ID from our custom ID
+const getMikrotikId = async (
+  credentials: MikrotikCredentials,
+  id: string,
+  updates: Partial<Omit<MikrotikPPPoEUser, 'id'>>,
+  isDevelopment: boolean
+): Promise<{ mikrotikId: string, userName: string | undefined }> => {
+  const { address, username, password } = credentials;
+  const authHeader = createAuthHeader(username, password);
+  
+  // If it already starts with '*', it's already a MikroTik ID
+  if (id.startsWith('*')) {
+    return { mikrotikId: id, userName: updates.name };
+  }
+  
+  if (isDevelopment) {
+    console.log('Converting custom ID to MikroTik ID format...');
+  }
+  
+  // If we have a name in the updates, use that to find the user
+  let userName = updates.name;
+  
+  if (!userName) {
+    // We need to fetch all users to find the one with our custom ID
+    const users = await fetchPPPoEUsers(credentials);
+    const user = users.find(u => u.id === id);
+    
+    if (!user) {
+      throw new Error(`User with ID ${id} not found`);
+    }
+    
+    userName = user.name;
+  }
+  
+  // Fetch the user by name to get the actual MikroTik ID
+  const response = await axios({
+    method: 'GET',
+    url: getApiUrl(address, `ppp/secret?name=${encodeURIComponent(userName)}`),
+    headers: {
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    }
+  });
+  
+  if (!Array.isArray(response.data) || response.data.length === 0) {
+    throw new Error(`User with name ${userName} not found`);
+  }
+  
+  // Return the actual MikroTik ID
+  return { mikrotikId: response.data[0]['.id'], userName };
+};
+
+// Helper function to disconnect a user's active session
+const disconnectUserSession = async (
+  credentials: MikrotikCredentials,
+  userName: string,
+  isDevelopment: boolean
+): Promise<void> => {
+  if (!userName) return;
+  
+  const { address, username, password } = credentials;
+  const authHeader = createAuthHeader(username, password);
+  
+  try {
+    // First try to find active sessions by name
+    const activeResponse = await axios({
+      method: 'GET',
+      url: getApiUrl(address, `ppp/active?name=${encodeURIComponent(userName)}`),
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (Array.isArray(activeResponse.data) && activeResponse.data.length > 0) {
+      // User is active, disconnect them
+      const activeId = activeResponse.data[0]['.id'];
+      await axios({
+        method: 'DELETE',
+        url: getApiUrl(address, `ppp/active/${activeId}`),
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (isDevelopment) {
+        console.log(`Disconnected active session for user: ${userName}`);
+      }
+    } else if (isDevelopment) {
+      console.log(`No active session found for user: ${userName}`);
+    }
+  } catch (error) {
+    console.error(`Error disconnecting user ${userName}:`, error);
+    // We don't throw here - continue even if disconnect fails
+  }
+};
+
 // Update an existing PPPoE user
 export const updatePPPoEUser = async (
   credentials: MikrotikCredentials,
@@ -336,94 +481,23 @@ export const updatePPPoEUser = async (
 ) => {
   const { address, username, password } = credentials;
   const authHeader = createAuthHeader(username, password);
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   try {
-    // Ensure we're only sending valid fields
-    const validUpdates: Record<string, string | boolean> = {};
+    // Prepare valid updates
+    const validUpdates = prepareUserUpdates(updates, isDevelopment);
     
-    // Only include fields that are defined and non-null
-    if (updates.name !== undefined && updates.name !== null) validUpdates.name = updates.name;
-    if (updates.password !== undefined && updates.password !== null) validUpdates.password = updates.password;
-    if (updates.service !== undefined && updates.service !== null) validUpdates.service = updates.service;
-    if (updates.profile !== undefined && updates.profile !== null) validUpdates.profile = updates.profile;
-    if (updates.disabled !== undefined && updates.disabled !== null) {
-      // Ensure disabled is a boolean
-      validUpdates.disabled = updates.disabled === true || String(updates.disabled) === 'true';
-      console.log(`Setting disabled state for ${id} to:`, validUpdates.disabled);
-    }
-    if (updates['caller-id'] !== undefined && updates['caller-id'] !== null) validUpdates['caller-id'] = updates['caller-id'];
-    if (updates.comment !== undefined) validUpdates.comment = updates.comment || ''; // Allow empty string
-    if (updates['limit-bytes-in'] !== undefined && updates['limit-bytes-in'] !== null) validUpdates['limit-bytes-in'] = updates['limit-bytes-in'];
-    if (updates['limit-bytes-out'] !== undefined && updates['limit-bytes-out'] !== null) validUpdates['limit-bytes-out'] = updates['limit-bytes-out'];
+    // Get the MikroTik ID and username
+    const { mikrotikId, userName } = await getMikrotikId(credentials, id, updates, isDevelopment);
     
-    console.log('Updating PPPoE user:', id);
-    console.log('Update data:', validUpdates);
+    // Flag to track if profile was changed
+    const profileChanged = 'profile' in validUpdates;
     
-    // Special handling for comment field
-    if ('comment' in validUpdates) {
-      // Ensure comment is a string
-      validUpdates.comment = String(validUpdates.comment);
-      
-      // Limit comment length
-      if (validUpdates.comment.length > 255) {
-        validUpdates.comment = validUpdates.comment.substring(0, 255);
-        console.warn('Comment truncated to 255 characters');
-      }
-      
-      // Escape special characters
-      validUpdates.comment = validUpdates.comment
-        .replace(/"/g, '')
-        .replace(/'/g, '')
-        .replace(/\\/g, '');
-      
-      console.log('Sanitized comment:', validUpdates.comment);
-    }
-    
-    // Check if the ID is our custom format or the MikroTik API's .id format
-    // If it doesn't start with '*', it's likely our custom format and we need to fetch the real ID
-    if (!id.startsWith('*')) {
-      console.log('Custom ID format detected, fetching the actual MikroTik ID...');
-      
-      // If we have a name in the updates, use that to find the user
-      // Otherwise, we need to fetch all users and find the one with our custom ID
-      let userName = updates.name;
-      
-      if (!userName) {
-        // We need to fetch all users to find the one with our custom ID
-        const users = await fetchPPPoEUsers(credentials);
-        const user = users.find(u => u.id === id);
-        
-        if (!user) {
-          throw new Error(`User with ID ${id} not found`);
-        }
-        
-        userName = user.name;
-      }
-      
-      // Fetch the user by name to get the actual MikroTik ID
-      const response = await axios({
-        method: 'GET',
-        url: getApiUrl(address, `ppp/secret?name=${encodeURIComponent(userName)}`),
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!Array.isArray(response.data) || response.data.length === 0) {
-        throw new Error(`User with name ${userName} not found`);
-      }
-      
-      // Use the actual MikroTik ID
-      id = response.data[0]['.id'];
-      console.log('Found actual MikroTik ID:', id);
-    }
-    
-    // Try direct API call first
+    // Try to update the user
     try {
-      const response = await axios({
+      await axios({
         method: 'PATCH',
-        url: getApiUrl(address, `ppp/secret/${id}`),
+        url: getApiUrl(address, `ppp/secret/${mikrotikId}`),
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json',
@@ -432,20 +506,25 @@ export const updatePPPoEUser = async (
         timeout: 15000 // Increase timeout
       });
       
-      console.log('Update response status:', response.status);
+      // If profile was changed, disconnect active sessions
+      if (profileChanged && userName) {
+        await disconnectUserSession(credentials, userName, isDevelopment);
+      }
+      
       return true;
-    } catch (directError: unknown) {
-      const error = directError as Error & {
+    } catch (error: unknown) {
+      const err = error as Error & {
         response?: {
           status: number;
           data: unknown;
         };
       };
-      console.error('Direct API call failed:', error.message);
       
       // If the error is related to the comment field, try updating without it
-      if ('comment' in validUpdates && error.response?.status === 400) {
-        console.log('Trying update without comment field...');
+      if ('comment' in validUpdates && err.response?.status === 400) {
+        if (isDevelopment) {
+          console.log('Comment field caused an error, trying update without comment...');
+        }
         
         // Create a copy without the comment field
         const updatesWithoutComment = { ...validUpdates };
@@ -453,9 +532,10 @@ export const updatePPPoEUser = async (
         
         // Only proceed if there are other fields to update
         if (Object.keys(updatesWithoutComment).length > 0) {
+          // First update without the comment
           await axios({
             method: 'PATCH',
-            url: getApiUrl(address, `ppp/secret/${id}`),
+            url: getApiUrl(address, `ppp/secret/${mikrotikId}`),
             headers: {
               'Authorization': authHeader,
               'Content-Type': 'application/json',
@@ -463,31 +543,35 @@ export const updatePPPoEUser = async (
             data: updatesWithoutComment
           });
           
-          console.log('Update without comment succeeded, now trying to update just the comment...');
-          
-          // Now try to update just the comment in a separate request
+          // Then try to update just the comment
           try {
             await axios({
               method: 'PATCH',
-              url: getApiUrl(address, `ppp/secret/${id}`),
+              url: getApiUrl(address, `ppp/secret/${mikrotikId}`),
               headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
               },
               data: { comment: validUpdates.comment }
             });
-            
-            console.log('Comment update succeeded!');
-            return true;
-          } catch (commentError) {
-            console.error('Comment update failed, but other fields were updated:', commentError);
-            return true; // Return success since the main update worked
+          } catch {
+            if (isDevelopment) {
+              console.log('Comment update failed, but other fields were updated');
+            }
+            // Continue since the main update worked
           }
+          
+          // If profile was changed, disconnect active sessions
+          if (profileChanged && userName) {
+            await disconnectUserSession(credentials, userName, isDevelopment);
+          }
+          
+          return true;
         }
       }
       
       // If we got here, rethrow the original error
-      throw error;
+      throw err;
     }
   } catch (error: unknown) {
     const err = error as Error & {
