@@ -40,9 +40,10 @@ interface PPPoEUserCardProps {
   credentials: MikrotikCredentials;
   onUpdate: () => void;
   onEditExpiry: (user: MikrotikPPPoEUser) => void;
+  disabled?: boolean;
 }
 
-export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPPoEUserCardProps) {
+export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disabled }: PPPoEUserCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -399,39 +400,33 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
           )}
         </CardContent>
         
-        <CardFooter className="flex justify-between pt-2 gap-1 sm:gap-2 px-3 sm:px-4 pb-3 sm:pb-4">
-          <div className="flex gap-1 sm:gap-2">
-            <Button 
-              variant={user.disabled === true ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setShowToggleDialog(true)}
-              disabled={loading}
-              className="flex items-center gap-1 h-7 sm:h-8 text-xs"
-            >
-              <Power className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              {user.disabled === true ? "Enable" : "Disable"}
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEditExpiry(user)}
-              disabled={loading}
-              className="flex items-center gap-1 h-7 sm:h-8 text-xs"
-            >
-              <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Manage
-            </Button>
-          </div>
-          
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => setShowDeleteDialog(true)}
-            disabled={loading}
-            className="flex items-center gap-1 h-7 sm:h-8 text-xs"
+        <CardFooter className="flex justify-end gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEditExpiry(user)}
+            disabled={disabled}
           >
-            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <Edit className="h-3.5 w-3.5 mr-1" />
+            Edit Expiry
+          </Button>
+          <Button
+            variant={user.disabled ? "outline" : "default"}
+            size="sm"
+            onClick={() => setShowToggleDialog(true)}
+            disabled={disabled}
+            className={user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}
+          >
+            <Power className="h-3.5 w-3.5 mr-1" />
+            {user.disabled ? 'Enable' : 'Disable'}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={disabled}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
             Delete
           </Button>
         </CardFooter>

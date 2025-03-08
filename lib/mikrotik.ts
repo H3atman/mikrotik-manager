@@ -511,11 +511,20 @@ export const updatePPPoEUser = async (
     // Prepare valid updates
     const validUpdates = prepareUserUpdates(updates, isDevelopment);
     
-    // Get the MikroTik ID and username
+    // Get the MikroTik ID and current user data
     const { mikrotikId, userName } = await getMikrotikId(credentials, id, updates, isDevelopment);
     
-    // Flag to track if profile was changed
-    const profileChanged = 'profile' in validUpdates;
+    // Get current user data to check if profile is actually changing
+    const currentUserData = await fetchPPPoEUsers(credentials);
+    const currentUser = currentUserData.find(u => u.id === id || u.name === updates.name);
+    const profileIsChanging = currentUser && updates.profile && currentUser.profile !== updates.profile;
+    
+    if (isDevelopment) {
+      console.log('Current user data:', currentUser);
+      console.log('Profile is changing:', profileIsChanging);
+      console.log('Current profile:', currentUser?.profile);
+      console.log('New profile:', updates.profile);
+    }
     
     // Try to update the user
     try {
@@ -530,9 +539,14 @@ export const updatePPPoEUser = async (
         timeout: 15000 // Increase timeout
       });
       
-      // If profile was changed, disconnect active sessions
-      if (profileChanged && userName) {
+      // Only disconnect if profile was actually changed
+      if (profileIsChanging && userName) {
+        if (isDevelopment) {
+          console.log('Profile changed, disconnecting user:', userName);
+        }
         await disconnectUserSession(credentials, userName, isDevelopment);
+      } else if (isDevelopment) {
+        console.log('No profile change or no active session to disconnect');
       }
       
       return true;
@@ -586,7 +600,7 @@ export const updatePPPoEUser = async (
           }
           
           // If profile was changed, disconnect active sessions
-          if (profileChanged && userName) {
+          if (profileIsChanging && userName) {
             await disconnectUserSession(credentials, userName, isDevelopment);
           }
           
