@@ -287,7 +287,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
             className="flex items-center gap-1 h-7 sm:h-8 text-xs"
           >
             <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            {expiryDate ? "Edit" : "Set"}
+            Manage
           </Button>
         </div>
         

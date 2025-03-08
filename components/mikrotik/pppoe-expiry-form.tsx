@@ -21,7 +21,7 @@ import {
   parsePostExpiryProfile,
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
-import { AlertCircle, Save, X, User, Tag, Info } from 'lucide-react';
+import { AlertCircle, Save, X, User, Tag, Info, Calendar, Clock } from 'lucide-react';
 
 interface PPPoEExpiryFormProps {
   user: MikrotikPPPoEUser;
@@ -34,6 +34,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [expiryTime, setExpiryTime] = useState<string>('23:59');
   const [postExpiryProfile, setPostExpiryProfile] = useState<string>('Due_Date_512Kbps');
+  const [currentProfile, setCurrentProfile] = useState<string>(user.profile || 'default');
   const [profiles, setProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,11 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
     
     if (currentPostExpiryProfile) {
       setPostExpiryProfile(currentPostExpiryProfile);
+    }
+    
+    // Set current profile from user
+    if (user.profile) {
+      setCurrentProfile(user.profile);
     }
     
     // Fetch available profiles
@@ -95,6 +101,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
       console.log('New comment:', newComment);
       console.log('Expiry date and time:', expiryDateTime);
       console.log('Post-expiry profile:', postExpiryProfile);
+      console.log('Current profile:', currentProfile);
       console.log('User ID:', user.id);
       console.log('User name:', user.name);
       
@@ -102,11 +109,12 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
       let success = false;
       let lastError = null;
       
-      // Approach 1: Use the new simplified format (no brackets, no original comment)
+      // Approach 1: Update with profile and comment
       try {
-        console.log('Trying approach 1: Simplified format');
+        console.log('Trying approach 1: Update with profile and comment');
         await updatePPPoEUser(credentials, user.id, {
           comment: newComment,
+          profile: currentProfile,
           name: user.name // Include name to help find the correct user
         });
         success = true;
@@ -122,15 +130,22 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
         lastError = err;
       }
       
-      // Approach 2: Try with just the tags in bracket format
+      // Approach 2: Try updating profile first, then comment
       if (!success) {
         try {
-          console.log('Trying approach 2: Bracket format');
-          const bracketComment = `[EXPIRY:${expiryDateTime}] [POST-EXPIRY:${postExpiryProfile}]`;
+          console.log('Trying approach 2: Update profile first, then comment');
+          // First update the profile
           await updatePPPoEUser(credentials, user.id, {
-            comment: bracketComment,
-            name: user.name // Include name to help find the correct user
+            profile: currentProfile,
+            name: user.name
           });
+          
+          // Then update the comment
+          await updatePPPoEUser(credentials, user.id, {
+            comment: newComment,
+            name: user.name
+          });
+          
           success = true;
         } catch (error: unknown) {
           const err = error as Error & { 
@@ -151,6 +166,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           console.log('Trying approach 3: Only expiry date');
           await updatePPPoEUser(credentials, user.id, {
             comment: `EXPIRY=${expiryDateTime}`,
+            profile: currentProfile,
             name: user.name // Include name to help find the correct user
           });
           success = true;
@@ -173,6 +189,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           console.log('Trying approach 4: Empty comment');
           await updatePPPoEUser(credentials, user.id, {
             comment: '',
+            profile: currentProfile,
             name: user.name // Include name to help find the correct user
           });
           success = true;
@@ -226,8 +243,8 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-blue-500" />
           <div>
-            <CardTitle className="text-lg">Manage Expiry for <span className="text-blue-500">{user.name}</span></CardTitle>
-            <CardDescription className="text-xs">Set when this user&apos;s subscription will expire</CardDescription>
+            <CardTitle className="text-lg">Manage User <span className="text-blue-500">{user.name}</span></CardTitle>
+            <CardDescription className="text-xs">Adjust profile, expiry date, and post-expiry settings</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -242,27 +259,59 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           )}
           
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Current Profile: <span className="text-blue-500">{user.profile || 'default'}</span>
+            <label htmlFor="currentProfile" className="text-sm font-medium flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5 text-blue-500" />
+              Current Profile
             </label>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Post-expiry Profile: <span className="text-blue-500">{postExpiryProfile}</span>
-            </label>
-            <p className="text-xs text-gray-500">
-              This profile will be applied when the user&apos;s account expires
+            <div className="relative">
+              <select
+                id="currentProfile"
+                value={currentProfile}
+                onChange={(e) => setCurrentProfile(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              >
+                {profiles.map(profile => (
+                  <option key={profile} value={profile}>
+                    {profile}
+                  </option>
+                ))}
+              </select>
+              <Tag className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            </div>
+            <p className="text-xs text-slate-500">
+              The profile determines the user&apos;s bandwidth and service level
             </p>
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Expiry Date and Time: <span className="text-blue-500">{expiryDate} {expiryTime}</span>
+          <div className="space-y-2 border-t pt-4 mt-4">
+            <label htmlFor="expiryDate" className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5 text-blue-500" />
+              Expiry Date
             </label>
-            <p className="text-xs text-gray-500">
-              The user&apos;s account will be restricted after this date and time
-            </p>
+            <input
+              type="date"
+              id="expiryDate"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="expiryTime" className="text-sm font-medium flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5 text-blue-500" />
+              Expiry Time
+            </label>
+            <input
+              type="time"
+              id="expiryTime"
+              value={expiryTime}
+              onChange={(e) => setExpiryTime(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              required
+            />
           </div>
           
           <div className="space-y-2">
@@ -295,7 +344,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             <div className="flex items-start gap-2">
               <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
               <p className="text-slate-600 leading-relaxed">
-                This will store expiry information in the user&apos;s comment field. The system will automatically change the profile when the expiry date and time is reached.
+                This will update the user&apos;s profile immediately and store expiry information in the user&apos;s comment field. The system will automatically change the profile when the expiry date and time is reached.
               </p>
             </div>
           </div>
@@ -326,7 +375,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
             ) : (
               <>
                 <Save className="h-3.5 w-3.5" />
-                Save Expiry
+                Save Changes
               </>
             )}
           </Button>
