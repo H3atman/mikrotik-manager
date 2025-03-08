@@ -18,6 +18,13 @@ import {
   fetchPPPoEProfiles,
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface PPPoEUserFormProps {
   credentials: MikrotikCredentials;
@@ -74,14 +81,21 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
     getProfiles();
   }, [credentials]);
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setUser(prev => ({ ...prev, [name]: checked }));
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement> | { name: string; value: string }
+  ) => {
+    if ('target' in e) {
+      const { name, value, type } = e.target as HTMLInputElement;
+      
+      if (type === 'checkbox') {
+        const checked = (e.target as HTMLInputElement).checked;
+        setUser(prev => ({ ...prev, [name]: checked }));
+      } else {
+        setUser(prev => ({ ...prev, [name]: value }));
+      }
     } else {
-      setUser(prev => ({ ...prev, [name]: value }));
+      // Handle direct value changes from shadcn Select
+      setUser(prev => ({ ...prev, [e.name]: e.value }));
     }
   };
   
@@ -172,19 +186,21 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
             <label htmlFor="profile" className="text-sm font-medium">
               Profile
             </label>
-            <select
-              id="profile"
-              name="profile"
+            <Select
               value={user.profile}
-              onChange={handleChange}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              onValueChange={(value) => handleChange({ name: 'profile', value })}
             >
-              {profiles.map(profile => (
-                <option key={profile} value={profile}>
-                  {profile}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a profile" />
+              </SelectTrigger>
+              <SelectContent>
+                {profiles.map(profile => (
+                  <SelectItem key={profile} value={profile}>
+                    {profile}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2 border-t pt-4">
@@ -231,19 +247,21 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
                   <label htmlFor="postExpiryProfile" className="text-sm font-medium">
                     Post-Expiry Profile
                   </label>
-                  <select
-                    id="postExpiryProfile"
+                  <Select
                     value={postExpiryProfile}
-                    onChange={(e) => setPostExpiryProfile(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    required={enableExpiry}
+                    onValueChange={setPostExpiryProfile}
                   >
-                    {profiles.map(profile => (
-                      <option key={profile} value={profile}>
-                        {profile}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map(profile => (
+                        <SelectItem key={profile} value={profile}>
+                          {profile}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
                     Profile that will be applied after expiry
                   </p>

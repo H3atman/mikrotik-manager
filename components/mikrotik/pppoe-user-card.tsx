@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -14,15 +14,26 @@ import { Badge } from '@/components/ui/badge';
 import { 
   MikrotikCredentials, 
   MikrotikPPPoEUser,
+  MikrotikQueueStats,
+  MikrotikActiveConnection,
   updatePPPoEUser,
   deletePPPoEUser,
   parseExpiryDate,
   parseExpiryTime,
   parsePostExpiryProfile,
   isUserExpired,
-  daysUntilExpiry
+  daysUntilExpiry,
+  fetchQueueStats,
+  fetchActiveConnection
 } from '@/lib/mikrotik';
-import { AlertCircle, Clock, Trash2, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Clock, Trash2, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface PPPoEUserCardProps {
   user: MikrotikPPPoEUser;
@@ -34,6 +45,12 @@ interface PPPoEUserCardProps {
 export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPPoEUserCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showToggleDialog, setShowToggleDialog] = useState(false);
+  const [queueStats, setQueueStats] = useState<MikrotikQueueStats | null>(null);
+  const [activeConnection, setActiveConnection] = useState<MikrotikActiveConnection | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   
   // Debug log for disabled state
   console.log(`User ${user.name} - disabled: ${user.disabled}`, user);
@@ -52,6 +69,33 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
   const expired = expiryDateTime ? isUserExpired(expiryDateTime) : false;
   const daysLeft = expiryDateTime ? daysUntilExpiry(expiryDateTime) : null;
   
+  // Fetch queue stats and active connection info
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setDataError(null);
+        const [queueData, connectionData] = await Promise.all([
+          fetchQueueStats(credentials, user.name),
+          fetchActiveConnection(credentials, user.name)
+        ]);
+
+        console.log('Queue data received:', queueData);
+        console.log('Connection data received:', connectionData);
+
+        setQueueStats(queueData);
+        setActiveConnection(connectionData);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setDataError('Failed to fetch user statistics');
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+
+    // Initial fetch only
+    fetchData();
+  }, [credentials, user.name]);
+  
   const handleToggleStatus = async () => {
     setLoading(true);
     setError(null);
@@ -67,14 +111,11 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
       console.error('Toggle status error:', error);
     } finally {
       setLoading(false);
+      setShowToggleDialog(false);
     }
   };
   
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete user "${user.name}"?`)) {
-      return;
-    }
-    
     setLoading(true);
     setError(null);
     
@@ -87,6 +128,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
       console.error('Delete user error:', error);
     } finally {
       setLoading(false);
+      setShowDeleteDialog(false);
     }
   };
   
@@ -157,152 +199,266 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry }: PPP
   };
   
   return (
-    <Card 
-      className={`w-full h-full shadow-md hover:shadow-lg transition-shadow duration-200 border-t-4 ${getCardBackgroundColor()}`} 
-      style={{ 
-        borderTopColor: getCardBorderColor(),
-        ...(user.disabled === true ? { borderColor: '#cbd5e1' } : {})
-      }}
-    >
-      <CardHeader className="pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-base sm:text-lg flex items-center gap-1 sm:gap-2">
-              <User 
-                className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${user.disabled === true ? 'text-slate-400' : (expired || isDueDateProfile) ? 'text-destructive' : 'text-primary'}`}
-                style={user.disabled === true ? { color: '#94a3b8' } : {}}
-              />
-              {user.name}
-            </CardTitle>
-            {cleanComment && (
-              <CardDescription className="text-xs mt-1 line-clamp-1">
-                {cleanComment}
-              </CardDescription>
+    <>
+      <Card 
+        className={`w-full h-full shadow-md hover:shadow-lg transition-shadow duration-200 border-t-4 ${getCardBackgroundColor()}`} 
+        style={{ 
+          borderTopColor: getCardBorderColor(),
+          ...(user.disabled === true ? { borderColor: '#cbd5e1' } : {})
+        }}
+      >
+        <CardHeader className="pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-base sm:text-lg flex items-center gap-1 sm:gap-2">
+                <User 
+                  className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${user.disabled === true ? 'text-slate-400' : (expired || isDueDateProfile) ? 'text-destructive' : 'text-primary'}`}
+                  style={user.disabled === true ? { color: '#94a3b8' } : {}}
+                />
+                {user.name}
+              </CardTitle>
+              {cleanComment && (
+                <CardDescription className="text-xs mt-1 line-clamp-1">
+                  {cleanComment}
+                </CardDescription>
+              )}
+            </div>
+            <Badge 
+              variant={getStatusBadgeVariant()} 
+              className={`ml-2 whitespace-nowrap text-xs ${user.disabled === true ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : ''}`}
+              style={user.disabled === true ? { backgroundColor: '#e2e8f0', color: '#475569' } : {}}
+            >
+              {getStatusText()}
+            </Badge>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="pb-2 space-y-4 px-3 sm:px-4">
+          {/* User Details Section */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                <Tag className="h-4 w-4" />
+                Profile
+              </span>
+              <span className={`text-sm font-medium ${isDueDateProfile ? "text-destructive font-bold" : ""} flex items-center gap-2`}>
+                {isDueDateProfile && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                {user.profile}
+              </span>
+            </div>
+            
+            {expiryDate && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  Expires
+                </span>
+                <span className={`text-sm font-medium ${expired ? "text-destructive" : daysLeft !== null && daysLeft <= 5 ? "text-amber-500" : ""}`}>
+                  {new Date(expiryDate).toLocaleDateString()}
+                  {expiryTime && ` at ${expiryTime}`}
+                  {daysLeft !== null && !expired && ` (${daysLeft} days)`}
+                </span>
+              </div>
+            )}
+            
+            {postExpiryProfile && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  After Expiry
+                </span>
+                <span className="text-sm">{postExpiryProfile}</span>
+              </div>
+            )}
+            
+            {user['caller-id'] && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                  <Wifi className="h-4 w-4" />
+                  MAC Address
+                </span>
+                <span className="font-mono text-sm">{user['caller-id']}</span>
+              </div>
             )}
           </div>
-          <Badge 
-            variant={getStatusBadgeVariant()} 
-            className={`ml-2 whitespace-nowrap text-xs ${user.disabled === true ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : ''}`}
-            style={user.disabled === true ? { backgroundColor: '#e2e8f0', color: '#475569' } : {}}
-          >
-            {getStatusText()}
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="pb-2 space-y-2 sm:space-y-3 px-3 sm:px-4">
-        <div className="grid grid-cols-1 gap-1 sm:gap-2 text-xs sm:text-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-medium flex items-center gap-1 text-muted-foreground">
-              <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              Profile:
-            </span>
-            <span className={`font-medium ${isDueDateProfile ? "text-destructive font-bold" : ""} flex items-center gap-1`}>
-              {isDueDateProfile && <AlertTriangle className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive" />}
-              {user.profile}
-            </span>
+
+          {/* Usage Statistics Section */}
+          <div className="space-y-4">
+            {isDataLoading ? (
+              <div className="flex items-center justify-center py-2">
+                <span className="text-sm text-muted-foreground">Loading statistics...</span>
+              </div>
+            ) : dataError ? (
+              <div className="flex items-center gap-2 text-destructive text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {dataError}
+              </div>
+            ) : (
+              <>
+                {/* Queue Statistics */}
+                {queueStats && (
+                  <div className="space-y-4">
+                    {/* Traffic Statistics */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between bg-secondary/20 px-3 py-2 rounded-md">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <Upload className="h-4 w-4 text-primary" />
+                          Total Upload
+                        </span>
+                        <span className="text-sm font-bold">{queueStats['formatted-upload']}</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-secondary/20 px-3 py-2 rounded-md">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <Download className="h-4 w-4 text-primary" />
+                          Total Download
+                        </span>
+                        <span className="text-sm font-bold">{queueStats['formatted-download']}</span>
+                      </div>
+                    </div>
+
+                    {/* Additional Stats */}
+                    <div className="space-y-2.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Upload className="h-4 w-4" />
+                          Current Rate
+                        </span>
+                        <span className="text-sm">{formatBytes(queueStats['rate'])}/s</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="h-4 w-4" />
+                          Dropped Packets
+                        </span>
+                        <span className="text-sm">{formatBytes(queueStats['dropped'])}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Connection Status */}
+                <div className="pt-1">
+                  {activeConnection ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          Uptime
+                        </span>
+                        <span className="text-sm font-medium text-green-600">{formatUptime(activeConnection.uptime)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Wifi className="h-4 w-4" />
+                          Address
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{activeConnection.address}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 hover:bg-secondary/80"
+                                  onClick={() => window.open(`http://${activeConnection.address}`, '_blank')}
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  <span className="sr-only">Open in browser</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="left">
+                                <p>{/^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)/.test(activeConnection.address) 
+                                    ? "Note: This is a private IP address - may only be accessible on local network"
+                                    : "Open client's address in browser"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        Status
+                      </span>
+                      <span className="text-sm font-medium text-yellow-600">Offline</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           
-          {expiryDate && (
-            <div className="flex items-center justify-between">
-              <span className="font-medium flex items-center gap-1 text-muted-foreground">
-                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                Expires:
-              </span>
-              <span className={`font-medium ${expired ? "text-destructive" : daysLeft !== null && daysLeft <= 5 ? "text-amber-500" : ""}`}>
-                {new Date(expiryDate).toLocaleDateString()}
-                {expiryTime && ` at ${expiryTime}`}
-                {daysLeft !== null && !expired && ` (${daysLeft} days)`}
-              </span>
+          {error && (
+            <div className="mt-2 text-sm text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              {error}
             </div>
           )}
-          
-          {postExpiryProfile && (
-            <div className="flex items-center justify-between">
-              <span className="font-medium flex items-center gap-1 text-muted-foreground">
-                <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                After Expiry:
-              </span>
-              <span>{postExpiryProfile}</span>
-            </div>
-          )}
-          
-          {user['caller-id'] && (
-            <div className="flex items-center justify-between">
-              <span className="font-medium flex items-center gap-1 text-muted-foreground">
-                <Wifi className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                MAC:
-              </span>
-              <span className="font-mono text-xs">{user['caller-id']}</span>
-            </div>
-          )}
-          
-          {user['limit-bytes-in'] && (
-            <div className="flex items-center justify-between">
-              <span className="font-medium flex items-center gap-1 text-muted-foreground">
-                <Download className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                Download:
-              </span>
-              <span>{formatBytes(user['limit-bytes-in'])}</span>
-            </div>
-          )}
-          
-          {user['limit-bytes-out'] && (
-            <div className="flex items-center justify-between">
-              <span className="font-medium flex items-center gap-1 text-muted-foreground">
-                <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                Upload:
-              </span>
-              <span>{formatBytes(user['limit-bytes-out'])}</span>
-            </div>
-          )}
-        </div>
+        </CardContent>
         
-        {error && (
-          <div className="mt-2 text-xs text-destructive flex items-center gap-1">
-            <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            {error}
+        <CardFooter className="flex justify-between pt-2 gap-1 sm:gap-2 px-3 sm:px-4 pb-3 sm:pb-4">
+          <div className="flex gap-1 sm:gap-2">
+            <Button 
+              variant={user.disabled === true ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setShowToggleDialog(true)}
+              disabled={loading}
+              className="flex items-center gap-1 h-7 sm:h-8 text-xs"
+            >
+              <Power className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              {user.disabled === true ? "Enable" : "Disable"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEditExpiry(user)}
+              disabled={loading}
+              className="flex items-center gap-1 h-7 sm:h-8 text-xs"
+            >
+              <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              Manage
+            </Button>
           </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="flex justify-between pt-2 gap-1 sm:gap-2 px-3 sm:px-4 pb-3 sm:pb-4">
-        <div className="flex gap-1 sm:gap-2">
+          
           <Button 
-            variant={user.disabled === true ? "default" : "outline"} 
+            variant="destructive" 
             size="sm" 
-            onClick={handleToggleStatus}
+            onClick={() => setShowDeleteDialog(true)}
             disabled={loading}
             className="flex items-center gap-1 h-7 sm:h-8 text-xs"
           >
-            <Power className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            {user.disabled === true ? "Enable" : "Disable"}
+            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            Delete
           </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEditExpiry(user)}
-            disabled={loading}
-            className="flex items-center gap-1 h-7 sm:h-8 text-xs"
-          >
-            <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            Manage
-          </Button>
-        </div>
-        
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={handleDelete}
-          disabled={loading}
-          className="flex items-center gap-1 h-7 sm:h-8 text-xs"
-        >
-          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-          Delete
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardFooter>
+      </Card>
+
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete User"
+        description={`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`}
+        actionLabel="Delete"
+        onAction={handleDelete}
+        variant="destructive"
+        loading={loading}
+      />
+
+      <ConfirmationDialog
+        open={showToggleDialog}
+        onOpenChange={setShowToggleDialog}
+        title={user.disabled ? "Enable User" : "Disable User"}
+        description={`Are you sure you want to ${user.disabled ? "enable" : "disable"} user "${user.name}"?`}
+        actionLabel={user.disabled ? "Enable" : "Disable"}
+        onAction={handleToggleStatus}
+        variant={user.disabled ? "default" : "destructive"}
+        loading={loading}
+      />
+    </>
   );
 }
 
@@ -321,4 +477,32 @@ function formatBytes(bytes: string): string {
   }
   
   return `${value.toFixed(1)} ${units[unitIndex]}`;
+}
+
+// Helper function to format uptime
+function formatUptime(uptime: string): string {
+  // Handle invalid input
+  if (!uptime) return 'N/A';
+
+  // Parse the uptime string (format: "1d6h8m4s" or similar)
+  const days = uptime.match(/(\d+)d/)?.[1] || '0';
+  const hours = uptime.match(/(\d+)h/)?.[1] || '0';
+  const minutes = uptime.match(/(\d+)m/)?.[1] || '0';
+  const seconds = uptime.match(/(\d+)s/)?.[1] || '0';
+
+  const d = parseInt(days);
+  const h = parseInt(hours);
+  const m = parseInt(minutes);
+  const s = parseInt(seconds);
+
+  // Format based on the duration
+  if (d > 0) {
+    return `${d}d ${h}h ${m}m`;
+  } else if (h > 0) {
+    return `${h}h ${m}m`;
+  } else if (m > 0) {
+    return `${m}m ${s}s`;
+  } else {
+    return `${s}s`;
+  }
 } 

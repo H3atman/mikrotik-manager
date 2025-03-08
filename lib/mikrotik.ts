@@ -33,6 +33,30 @@ export interface MikrotikPPPoEUser {
   postExpiryProfile?: string;
 }
 
+// Queue Statistics Interface
+export interface MikrotikQueueStats {
+  name: string;
+  'bytes': string;
+  'upload-bytes': string;
+  'download-bytes': string;
+  'formatted-upload': string;  // Added for human-readable upload
+  'formatted-download': string;  // Added for human-readable download
+  'rate': string;
+  'packet-rate': string;
+  'packets': string;
+  'dropped': string;
+  'queued-packets': string;
+  'queued-bytes': string;
+}
+
+// Active Connection Interface
+export interface MikrotikActiveConnection {
+  name: string;
+  uptime: string;
+  address: string;
+  'session-id': string;
+}
+
 // Create auth header
 export const createAuthHeader = (username: string, password: string) => {
   // In browser environments use btoa, in Node.js environments use Buffer
@@ -846,4 +870,159 @@ export const processExpiredUsers = async (credentials: MikrotikCredentials): Pro
   }
   
   return processedCount;
+};
+
+// Helper function to format bytes into human readable format
+export const formatBytes = (bytes: string | number): string => {
+  const bytesNum = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
+  
+  if (isNaN(bytesNum)) return '0 B';
+  
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (bytesNum === 0) return '0 B';
+  
+  const i = Math.floor(Math.log(bytesNum) / Math.log(1024));
+  if (i === 0) return `${bytesNum} ${sizes[i]}`;
+  
+  return `${(bytesNum / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+};
+
+// Fetch queue statistics for a specific user
+export const fetchQueueStats = async (
+  credentials: MikrotikCredentials,
+  userName: string
+): Promise<MikrotikQueueStats | null> => {
+  const { address, username, password } = credentials;
+  const authHeader = createAuthHeader(username, password);
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  try {
+    // Format the target name with angle brackets
+    const target = `<pppoe-${userName}>`;
+    
+    // Get queue statistics with the correct URL format
+    const response = await axios({
+      method: 'GET',
+      url: getApiUrl(address, `queue/simple?target=${encodeURIComponent(target)}`),
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (isDevelopment) {
+      console.log('Queue target:', target);
+      console.log('Queue response:', response.data);
+    }
+    
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      const stats = response.data[0];
+      
+      // Parse the bytes data which comes in format "upload/download"
+      let uploadBytes = '0';
+      let downloadBytes = '0';
+      
+      if (stats.bytes && typeof stats.bytes === 'string') {
+        const parts = stats.bytes.split('/');
+        if (parts.length === 2) {
+          uploadBytes = parts[0];
+          downloadBytes = parts[1];
+        }
+      }
+      
+      // Add the parsed data to the stats object with formatted values
+      const enhancedStats = {
+        ...stats,
+        'upload-bytes': uploadBytes,
+        'download-bytes': downloadBytes,
+        'formatted-upload': formatBytes(uploadBytes),
+        'formatted-download': formatBytes(downloadBytes),
+      } as MikrotikQueueStats;
+      
+      if (isDevelopment) {
+        console.log('Queue statistics found:', enhancedStats);
+      }
+      
+      return enhancedStats;
+    }
+    
+    // If no results found with angle brackets, try without them as fallback
+    const fallbackTarget = `pppoe-${userName}`;
+    const fallbackResponse = await axios({
+      method: 'GET',
+      url: getApiUrl(address, `queue/simple?target=${encodeURIComponent(fallbackTarget)}`),
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (Array.isArray(fallbackResponse.data) && fallbackResponse.data.length > 0) {
+      const stats = fallbackResponse.data[0];
+      
+      // Parse the bytes data which comes in format "upload/download"
+      let uploadBytes = '0';
+      let downloadBytes = '0';
+      
+      if (stats.bytes && typeof stats.bytes === 'string') {
+        const parts = stats.bytes.split('/');
+        if (parts.length === 2) {
+          uploadBytes = parts[0];
+          downloadBytes = parts[1];
+        }
+      }
+      
+      // Add the parsed data to the stats object with formatted values
+      const enhancedStats = {
+        ...stats,
+        'upload-bytes': uploadBytes,
+        'download-bytes': downloadBytes,
+        'formatted-upload': formatBytes(uploadBytes),
+        'formatted-download': formatBytes(downloadBytes),
+      } as MikrotikQueueStats;
+      
+      if (isDevelopment) {
+        console.log('Queue statistics found (without angle brackets):', enhancedStats);
+      }
+      
+      return enhancedStats;
+    }
+    
+    if (isDevelopment) {
+      console.log(`No queue statistics found for user ${userName}`);
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch queue statistics:', error);
+    return null;
+  }
+};
+
+// Fetch active connection information for a specific user
+export const fetchActiveConnection = async (
+  credentials: MikrotikCredentials,
+  userName: string
+): Promise<MikrotikActiveConnection | null> => {
+  const { address, username, password } = credentials;
+  const authHeader = createAuthHeader(username, password);
+  
+  try {
+    const response = await axios({
+      method: 'GET',
+      url: getApiUrl(address, `ppp/active?name=${encodeURIComponent(userName)}`),
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      return response.data[0] as MikrotikActiveConnection;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to fetch active connection:', error);
+    return null;
+  }
 }; 

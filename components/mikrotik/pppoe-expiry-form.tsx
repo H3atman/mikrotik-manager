@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePickerWithNextMonth } from '@/components/ui/date-picker';
 import { 
   MikrotikCredentials, 
   MikrotikPPPoEUser,
@@ -22,6 +23,13 @@ import {
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
 import { AlertCircle, Save, X, User, Tag, Info, Calendar, Clock } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface PPPoEExpiryFormProps {
   user: MikrotikPPPoEUser;
@@ -31,7 +39,7 @@ interface PPPoEExpiryFormProps {
 }
 
 export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPoEExpiryFormProps) {
-  const [expiryDate, setExpiryDate] = useState<string>('');
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
   const [expiryTime, setExpiryTime] = useState<string>('23:59');
   const [postExpiryProfile, setPostExpiryProfile] = useState<string>('Due_Date_512Kbps');
   const [currentProfile, setCurrentProfile] = useState<string>(user.profile || 'default');
@@ -46,12 +54,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
     const currentPostExpiryProfile = parsePostExpiryProfile(user.comment);
     
     if (currentExpiryDate) {
-      setExpiryDate(currentExpiryDate);
-    } else {
-      // Default to 30 days from now
-      const date = new Date();
-      date.setDate(date.getDate() + 30);
-      setExpiryDate(date.toISOString().split('T')[0]);
+      setExpiryDate(new Date(currentExpiryDate));
     }
     
     if (currentExpiryTime) {
@@ -86,10 +89,17 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
     setLoading(true);
     setError(null);
     
+    if (!expiryDate) {
+      setError('Please select an expiry date');
+      setLoading(false);
+      return;
+    }
+
     try {
       // Format comment with expiry information
       const originalComment = user.comment || '';
-      const expiryDateTime = `${expiryDate}T${expiryTime}`;
+      const formattedDate = expiryDate.toISOString().split('T')[0];
+      const expiryDateTime = `${formattedDate}T${expiryTime}`;
       const newComment = formatCommentWithExpiry(
         originalComment,
         expiryDateTime,
@@ -264,19 +274,21 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
               Current Profile
             </label>
             <div className="relative">
-              <select
-                id="currentProfile"
+              <Select
                 value={currentProfile}
-                onChange={(e) => setCurrentProfile(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
+                onValueChange={setCurrentProfile}
               >
-                {profiles.map(profile => (
-                  <option key={profile} value={profile}>
-                    {profile}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full pl-8">
+                  <SelectValue placeholder="Select a profile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map(profile => (
+                    <SelectItem key={profile} value={profile}>
+                      {profile}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Tag className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             </div>
             <p className="text-xs text-slate-500">
@@ -285,17 +297,13 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           </div>
           
           <div className="space-y-2 border-t pt-4 mt-4">
-            <label htmlFor="expiryDate" className="text-sm font-medium flex items-center gap-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5 text-blue-500" />
               Expiry Date
             </label>
-            <input
-              type="date"
-              id="expiryDate"
+            <DatePickerWithNextMonth 
               value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              required
+              onChange={setExpiryDate}
             />
           </div>
           
@@ -320,19 +328,21 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
               Post-Expiry Profile
             </label>
             <div className="relative">
-              <select
-                id="postExpiryProfile"
+              <Select
                 value={postExpiryProfile}
-                onChange={(e) => setPostExpiryProfile(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
+                onValueChange={setPostExpiryProfile}
               >
-                {profiles.map(profile => (
-                  <option key={profile} value={profile}>
-                    {profile}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full pl-8">
+                  <SelectValue placeholder="Select a profile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map(profile => (
+                    <SelectItem key={profile} value={profile}>
+                      {profile}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Tag className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             </div>
             <p className="text-xs text-slate-500">
