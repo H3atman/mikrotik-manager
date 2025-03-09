@@ -209,7 +209,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
         }}
       >
         <CardHeader className="pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
             <div>
               <CardTitle className="text-base sm:text-lg flex items-center gap-1 sm:gap-2">
                 <User 
@@ -226,7 +226,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             </div>
             <Badge 
               variant={getStatusBadgeVariant()} 
-              className={`ml-2 whitespace-nowrap text-xs ${user.disabled === true ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : ''}`}
+              className={`whitespace-nowrap text-xs ${user.disabled === true ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : ''}`}
               style={user.disabled === true ? { backgroundColor: '#e2e8f0', color: '#475569' } : {}}
             >
               {getStatusText()}
@@ -237,21 +237,21 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
         <CardContent className="pb-2 space-y-4 px-3 sm:px-4">
           {/* User Details Section */}
           <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                <Tag className="h-4 w-4" />
+                <Tag className="h-4 w-4 flex-shrink-0" />
                 Profile
               </span>
               <span className={`text-sm font-medium ${isDueDateProfile ? "text-destructive font-bold" : ""} flex items-center gap-2`}>
-                {isDueDateProfile && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                {isDueDateProfile && <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />}
                 {user.profile}
               </span>
             </div>
             
             {expiryDate && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
                   Expires
                 </span>
                 <span className={`text-sm font-medium ${expired ? "text-destructive" : daysLeft !== null && daysLeft <= 5 ? "text-amber-500" : ""}`}>
@@ -263,9 +263,9 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             )}
             
             {postExpiryProfile && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 flex-shrink-0" />
                   After Expiry
                 </span>
                 <span className="text-sm">{postExpiryProfile}</span>
@@ -273,12 +273,12 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             )}
             
             {user['caller-id'] && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Wifi className="h-4 w-4" />
+                  <Wifi className="h-4 w-4 flex-shrink-0" />
                   MAC Address
                 </span>
-                <span className="font-mono text-sm">{user['caller-id']}</span>
+                <span className="font-mono text-sm break-all">{user['caller-id']}</span>
               </div>
             )}
           </div>
@@ -400,12 +400,13 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
           )}
         </CardContent>
         
-        <CardFooter className="flex justify-end gap-2 pt-2">
+        <CardFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onEditExpiry(user)}
             disabled={disabled}
+            className="w-full sm:w-auto"
           >
             <Edit className="h-3.5 w-3.5 mr-1" />
             Edit Expiry
@@ -415,7 +416,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             size="sm"
             onClick={() => setShowToggleDialog(true)}
             disabled={disabled}
-            className={user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}
+            className={`w-full sm:w-auto ${user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}`}
           >
             <Power className="h-3.5 w-3.5 mr-1" />
             {user.disabled ? 'Enable' : 'Disable'}
@@ -425,6 +426,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
             disabled={disabled}
+            className="w-full sm:w-auto"
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
             Delete

@@ -138,10 +138,10 @@ Make sure:
         <CardContent className="space-y-4 px-4 sm:px-6">
           {error && (
             <Alert variant="destructive" className="animate-pulse text-xs sm:text-sm py-2 sm:py-3">
-              <AlertCircle className="h-3.5 w-3.5 mr-2" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertCircle className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+              <AlertDescription className="break-words">{error}</AlertDescription>
               {debugInfo && (
-                <div className="mt-2 text-xs font-mono bg-black/10 p-2 rounded overflow-auto max-h-24">
+                <div className="mt-2 text-xs font-mono bg-black/10 p-2 rounded overflow-auto max-h-24 w-full">
                   {debugInfo}
                 </div>
               )}
@@ -151,7 +151,7 @@ Make sure:
           {!usingCloudflare && (
             <div className="space-y-2">
               <label htmlFor="address" className="text-sm font-medium flex items-center gap-2">
-                <Wifi className="h-3.5 w-3.5 text-blue-500" />
+                <Wifi className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                 Router IP Address
               </label>
               <Input
@@ -171,7 +171,7 @@ Make sure:
           
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium flex items-center gap-2">
-              <User className="h-3.5 w-3.5 text-blue-500" />
+              <User className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
               Username
             </label>
             <Input
@@ -186,7 +186,7 @@ Make sure:
           
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-              <Lock className="h-3.5 w-3.5 text-blue-500" />
+              <Lock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
               Password
             </label>
             <Input
@@ -215,7 +215,7 @@ Make sure:
         <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2">
           <Button 
             type="submit" 
-            className="w-full flex items-center justify-center gap-2 h-9 sm:h-10 bg-blue-500 hover:bg-blue-600" 
+            className="w-full flex items-center justify-center gap-2 h-10 sm:h-11 bg-blue-500 hover:bg-blue-600 text-sm sm:text-base" 
             disabled={loading}
           >
             {loading ? (

@@ -177,39 +177,45 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
   
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8"
-            />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 w-full sm:w-64">
+              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Input
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className={refreshing ? 'animate-spin' : ''}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className={refreshing ? 'animate-spin' : ''}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap gap-2 items-center justify-start sm:justify-end">
           {!selectionMode ? (
             <>
               <Button
                 variant="outline"
                 onClick={() => setSelectionMode(true)}
+                className="flex-1 sm:flex-none"
               >
                 <Users className="h-4 w-4 mr-1" />
                 Select Users
               </Button>
-              <Button onClick={() => setShowAddForm(true)}>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="flex-1 sm:flex-none"
+              >
                 <Plus className="h-4 w-4 mr-1" />
                 Add User
               </Button>
@@ -217,6 +223,7 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
                 variant="outline"
                 onClick={handleProcessExpiry}
                 disabled={processingExpiry}
+                className="flex-1 sm:flex-none"
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Process Expired
@@ -224,6 +231,7 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
               <Button
                 variant="outline"
                 onClick={onDisconnect}
+                className="flex-1 sm:flex-none"
               >
                 <LogOut className="h-4 w-4 mr-1" />
                 Disconnect
@@ -231,8 +239,8 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2 mr-4">
-                <label className="text-sm">
+              <div className="flex items-center gap-2 mr-2 sm:mr-4">
+                <label className="text-sm flex items-center">
                   <input
                     type="checkbox"
                     className="mr-2"
@@ -249,12 +257,14 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
                   setSelectedUsers([]);
                   setShowActiveUsersOnly(false);
                 }}
+                className="flex-1 sm:flex-none"
               >
                 Cancel Selection
               </Button>
               <Button
                 onClick={handleBatchExpiry}
                 disabled={selectedUsers.length === 0}
+                className="flex-1 sm:flex-none"
               >
                 Update {selectedUsers.length} User{selectedUsers.length !== 1 ? 's' : ''}
               </Button>
@@ -346,7 +356,7 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
       ) : (
         <>
           {filteredUsers.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredUsers.map(user => (
                 <div
                   key={user.id}
@@ -355,11 +365,17 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
                 >
                   {selectionMode && (
                     <div className="absolute -top-2 -right-2 z-10">
-                      <div className={`h-5 w-5 rounded-full border-2 ${
+                      <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
                         selectedUsers.some(u => u.id === user.id)
                           ? 'bg-blue-500 border-blue-500'
                           : 'bg-white border-slate-300'
-                      }`} />
+                      }`}>
+                        {selectedUsers.some(u => u.id === user.id) && (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
                   )}
                   <PPPoEUserCard

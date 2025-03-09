@@ -32,28 +32,30 @@ export default function Home() {
   };
   
   return (
-    <main className="container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 max-w-7xl">
+    <main className="container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 max-w-7xl flex flex-col min-h-[calc(100vh-2rem)]">
       <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 md:mb-8 text-blue-500">
         Mikrotik PPPoE Manager
       </h1>
       
-      {credentials ? (
-        <div className="space-y-4 sm:space-y-6">
-          <PPPoEUserList
-            credentials={credentials}
-            onDisconnect={handleDisconnect}
-          />
-        </div>
-      ) : (
-        <div className="w-full max-w-md mx-auto px-2 sm:px-0">
-          <ConnectForm 
-            onConnect={handleConnect} 
-            initialValues={initialValues}
-          />
-        </div>
-      )}
+      <div className="flex-grow">
+        {credentials ? (
+          <div className="space-y-4 sm:space-y-6">
+            <PPPoEUserList
+              credentials={credentials}
+              onDisconnect={handleDisconnect}
+            />
+          </div>
+        ) : (
+          <div className="w-full max-w-md mx-auto px-2 sm:px-0">
+            <ConnectForm 
+              onConnect={handleConnect} 
+              initialValues={initialValues}
+            />
+          </div>
+        )}
+      </div>
       
-      <footer className="mt-8 sm:mt-12 md:mt-16 text-center text-xs sm:text-sm text-muted-foreground py-4">
+      <footer className="mt-6 sm:mt-8 md:mt-12 text-center text-xs sm:text-sm text-muted-foreground py-4">
         <p>
           Made with Next.js and shadcn UI. Works with local or ZeroTier network connections.
         </p>
