@@ -17,12 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, RefreshCw, LogOut, Clock, Users } from 'lucide-react';
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 
 interface PPPoEUserListProps {
   credentials: MikrotikCredentials;
@@ -177,16 +177,16 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
   
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 w-full sm:w-64">
-              <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <div className="relative flex-1 w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8"
+                className="w-full pl-9 h-10 sm:h-11"
               />
             </div>
             <Button
@@ -194,60 +194,60 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
               size="icon"
               onClick={handleRefresh}
               disabled={refreshing}
-              className={refreshing ? 'animate-spin' : ''}
+              className={`h-10 w-10 sm:h-11 sm:w-11 ${refreshing ? 'animate-spin' : ''}`}
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-2 items-center justify-start sm:justify-end">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-start sm:justify-end">
           {!selectionMode ? (
             <>
               <Button
                 variant="outline"
                 onClick={() => setSelectionMode(true)}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
-                <Users className="h-4 w-4 mr-1" />
+                <Users className="h-4 w-4 mr-2" />
                 Select Users
               </Button>
               <Button 
                 onClick={() => setShowAddForm(true)}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 mr-2" />
                 Add User
               </Button>
               <Button
                 variant="outline"
                 onClick={handleProcessExpiry}
                 disabled={processingExpiry}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
-                <Clock className="h-4 w-4 mr-1" />
+                <Clock className="h-4 w-4 mr-2" />
                 Process Expired
               </Button>
               <Button
                 variant="outline"
                 onClick={onDisconnect}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
-                <LogOut className="h-4 w-4 mr-1" />
+                <LogOut className="h-4 w-4 mr-2" />
                 Disconnect
               </Button>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2 mr-2 sm:mr-4">
-                <label className="text-sm flex items-center">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                <label className="text-sm flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="mr-2"
+                    className="h-4 w-4 cursor-pointer"
                     checked={showActiveUsersOnly}
                     onChange={handleActiveUsersOnlyChange}
                   />
-                  Active Users Only
+                  <span className="select-none">Active Users Only</span>
                 </label>
               </div>
               <Button
@@ -257,14 +257,14 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
                   setSelectedUsers([]);
                   setShowActiveUsersOnly(false);
                 }}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
                 Cancel Selection
               </Button>
               <Button
                 onClick={handleBatchExpiry}
                 disabled={selectedUsers.length === 0}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:w-auto h-10 sm:h-11 text-sm"
               >
                 Update {selectedUsers.length} User{selectedUsers.length !== 1 ? 's' : ''}
               </Button>
@@ -293,16 +293,16 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
         />
       )}
 
-      <Drawer open={showExpiryForm} onOpenChange={setShowExpiryForm}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Update Expiry Settings</DrawerTitle>
-            <DrawerDescription>
+      <Sheet open={showExpiryForm} onOpenChange={setShowExpiryForm}>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-2xl sm:mx-auto">
+          <SheetHeader>
+            <SheetTitle>Update Expiry Settings</SheetTitle>
+            <SheetDescription>
               {selectedUser ? `Updating expiry for user: ${selectedUser.name}` : 'Select a user to update'}
-            </DrawerDescription>
-          </DrawerHeader>
+            </SheetDescription>
+          </SheetHeader>
           {showExpiryForm && selectedUser && (
-            <div className="px-4 pb-4">
+            <div className="mt-6 px-1">
               <PPPoEExpiryForm
                 user={selectedUser}
                 credentials={credentials}
@@ -311,10 +311,10 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
               />
             </div>
           )}
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
 
-      <Drawer 
+      <Sheet 
         open={showBatchExpiryForm} 
         onOpenChange={(open) => {
           setShowBatchExpiryForm(open);
@@ -325,14 +325,14 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
           }
         }}
       >
-        <DrawerContent>
-          <DrawerHeader className="border-b">
-            <DrawerTitle>Batch Update Users</DrawerTitle>
-            <DrawerDescription>
+        <SheetContent side="bottom" className="h-[90vh] sm:h-auto sm:max-w-3xl sm:mx-auto">
+          <SheetHeader className="border-b pb-4">
+            <SheetTitle>Batch Update Users</SheetTitle>
+            <SheetDescription>
               Update expiry settings for {selectedUsers.length} selected user{selectedUsers.length !== 1 ? 's' : ''}
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="px-4 py-6">
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 px-1">
             {showBatchExpiryForm && selectedUsers.length > 0 && (
               <PPPoEBatchExpiryForm
                 users={selectedUsers}
@@ -342,8 +342,8 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
               />
             )}
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
 
       {loading ? (
         <Card className="shadow-md">
@@ -356,18 +356,18 @@ export function PPPoEUserList({ credentials, onDisconnect }: PPPoEUserListProps)
       ) : (
         <>
           {filteredUsers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredUsers.map(user => (
                 <div
                   key={user.id}
-                  className={`relative ${selectionMode ? 'cursor-pointer' : ''}`}
+                  className={`relative ${selectionMode ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}`}
                   onClick={() => selectionMode && toggleUserSelection(user)}
                 >
                   {selectionMode && (
                     <div className="absolute -top-2 -right-2 z-10">
-                      <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
+                      <div className={`h-7 w-7 sm:h-6 sm:w-6 rounded-full border-2 flex items-center justify-center shadow-md transition-all ${
                         selectedUsers.some(u => u.id === user.id)
-                          ? 'bg-blue-500 border-blue-500'
+                          ? 'bg-blue-500 border-blue-500 scale-110'
                           : 'bg-white border-slate-300'
                       }`}>
                         {selectedUsers.some(u => u.id === user.id) && (

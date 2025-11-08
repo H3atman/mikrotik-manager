@@ -40,7 +40,7 @@ export function DatePickerWithNextMonth({ value, onChange }: DatePickerWithNextM
         <Button
           variant={"outline"}
           className={cn(
-            "w-[280px] justify-start text-left font-normal",
+            "w-full sm:w-[280px] h-10 sm:h-9 justify-start text-left font-normal",
             !date && "text-muted-foreground"
           )}
         >
@@ -48,13 +48,13 @@ export function DatePickerWithNextMonth({ value, onChange }: DatePickerWithNextM
           {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex w-auto flex-col space-y-2 p-2">
+      <PopoverContent className="flex w-auto flex-col space-y-2 p-3" align="start">
         <div className="rounded-md border">
           <Calendar mode="single" selected={date} onSelect={handleDateChange} />
         </div>
         <Button
           variant="outline"
-          className="w-full text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+          className="w-full h-10 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50"
           onClick={() => handleDateChange(firstDayOfNextMonth)}
         >
           Set to first day of next month
@@ -62,4 +62,4 @@ export function DatePickerWithNextMonth({ value, onChange }: DatePickerWithNextM
       </PopoverContent>
     </Popover>
   )
-} 
+}

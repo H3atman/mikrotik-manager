@@ -32,10 +32,15 @@ export default function Home() {
   };
   
   return (
-    <main className="container mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4 max-w-7xl flex flex-col min-h-[calc(100vh-2rem)]">
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 md:mb-8 text-blue-500">
-        Mikrotik PPPoE Manager
-      </h1>
+    <main className="container mx-auto py-3 sm:py-6 md:py-8 px-3 sm:px-4 max-w-7xl flex flex-col min-h-screen">
+      <header className="mb-4 sm:mb-6 md:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-blue-500 tracking-tight">
+          Mikrotik PPPoE Manager
+        </h1>
+        <p className="text-center text-xs sm:text-sm text-muted-foreground mt-2">
+          Manage your MikroTik PPPoE users with ease
+        </p>
+      </header>
       
       <div className="flex-grow">
         {credentials ? (
@@ -55,9 +60,12 @@ export default function Home() {
         )}
       </div>
       
-      <footer className="mt-6 sm:mt-8 md:mt-12 text-center text-xs sm:text-sm text-muted-foreground py-4">
-        <p>
-          Made with Next.js and shadcn UI. Works with local or ZeroTier network connections.
+      <footer className="mt-6 sm:mt-8 md:mt-12 text-center text-xs sm:text-sm text-muted-foreground py-4 border-t">
+        <p className="mb-1">
+          Made with <span className="text-blue-500">Next.js</span> and <span className="text-blue-500">shadcn/ui</span>
+        </p>
+        <p className="text-xs text-muted-foreground/70">
+          Works with local, ZeroTier, or Cloudflare Tunnel connections
         </p>
       </footer>
     </main>

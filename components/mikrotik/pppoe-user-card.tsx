@@ -17,7 +17,6 @@ import {
   MikrotikQueueStats,
   MikrotikActiveConnection,
   updatePPPoEUser,
-  deletePPPoEUser,
   parseExpiryDate,
   parseExpiryTime,
   parsePostExpiryProfile,
@@ -26,7 +25,7 @@ import {
   fetchQueueStats,
   fetchActiveConnection
 } from '@/lib/mikrotik';
-import { AlertCircle, Clock, Trash2, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle, ExternalLink } from 'lucide-react';
+import { AlertCircle, Clock, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle, ExternalLink, CalendarPlus } from 'lucide-react';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Tooltip,
@@ -46,7 +45,6 @@ interface PPPoEUserCardProps {
 export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disabled }: PPPoEUserCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showToggleDialog, setShowToggleDialog] = useState(false);
   const [queueStats, setQueueStats] = useState<MikrotikQueueStats | null>(null);
   const [activeConnection, setActiveConnection] = useState<MikrotikActiveConnection | null>(null);
@@ -116,20 +114,53 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
     }
   };
   
-  const handleDelete = async () => {
+  
+  const handleSetNextMonthExpiry = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      await deletePPPoEUser(credentials, user.id);
+      // Calculate first day of next month
+      const today = new Date();
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      
+      // Format date as YYYY-MM-DD in local timezone
+      const year = nextMonth.getFullYear();
+      const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+      const day = String(nextMonth.getDate()).padStart(2, '0');
+      const expiryDateStr = `${year}-${month}-${day}`;
+      
+      // Parse existing comment to extract date, time, and profile
+      let newComment = user.comment || '';
+      
+      // Pattern: YYYY-MM-DD,HH:MM,ProfileName
+      const commentPattern = /^(\d{4}-\d{2}-\d{2}),(\d{2}:\d{2}),(.+)$/;
+      const match = newComment.match(commentPattern);
+      
+      if (match) {
+        // Preserve time and profile, update only the date
+        const time = match[2];
+        const profile = match[3];
+        newComment = `${expiryDateStr},${time},${profile}`;
+      } else {
+        // If comment doesn't match pattern, use default format
+        newComment = `${expiryDateStr},23:59,Due_Date_512Kbps`;
+      }
+      
+      console.log('Setting expiry to:', expiryDateStr);
+      console.log('New comment:', newComment);
+      
+      await updatePPPoEUser(credentials, user.id, {
+        comment: newComment
+      });
+      
       onUpdate();
     } catch (err: unknown) {
       const error = err as Error;
-      setError(`Failed to delete user: ${error.message}`);
-      console.error('Delete user error:', error);
+      setError(`Failed to set expiry date: ${error.message}`);
+      console.error('Set expiry error:', error);
     } finally {
       setLoading(false);
-      setShowDeleteDialog(false);
     }
   };
   
@@ -400,50 +431,39 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
           )}
         </CardContent>
         
-        <CardFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2">
+        <CardFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-2 px-3 sm:px-4 pb-3 sm:pb-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onEditExpiry(user)}
             disabled={disabled}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto h-9 sm:h-8 text-sm"
           >
-            <Edit className="h-3.5 w-3.5 mr-1" />
+            <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
             Edit Expiry
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSetNextMonthExpiry}
+            disabled={disabled || loading}
+            className="w-full sm:w-auto h-9 sm:h-8 text-sm bg-green-100 hover:bg-green-200 text-green-700 border border-green-300"
+            title="Mark as paid - set expiry to first day of next month"
+          >
+            <CalendarPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
+            Paid
           </Button>
           <Button
             variant={user.disabled ? "outline" : "default"}
             size="sm"
             onClick={() => setShowToggleDialog(true)}
             disabled={disabled}
-            className={`w-full sm:w-auto ${user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}`}
+            className={`w-full sm:w-auto h-9 sm:h-8 text-sm ${user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}`}
           >
-            <Power className="h-3.5 w-3.5 mr-1" />
+            <Power className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
             {user.disabled ? 'Enable' : 'Disable'}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setShowDeleteDialog(true)}
-            disabled={disabled}
-            className="w-full sm:w-auto"
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Delete
           </Button>
         </CardFooter>
       </Card>
-
-      <ConfirmationDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        title="Delete User"
-        description={`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`}
-        actionLabel="Delete"
-        onAction={handleDelete}
-        variant="destructive"
-        loading={loading}
-      />
 
       <ConfirmationDialog
         open={showToggleDialog}
