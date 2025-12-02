@@ -295,9 +295,9 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
     // Force slate background for disabled users
     if (user.disabled === true) {
       console.log(`User ${user.name} is disabled, using slate background`);
-      return 'bg-slate-50'; // Light slate background for disabled
+      return 'bg-slate-50 dark:bg-slate-800/50'; // Light slate background for disabled
     } else if (expired || isDueDateProfile) {
-      return 'bg-red-50'; // Light red background for expired or Due_Date_512Kbps
+      return 'bg-red-50 dark:bg-red-950/40'; // Light red background for expired or Due_Date_512Kbps
     }
     return '';
   };
