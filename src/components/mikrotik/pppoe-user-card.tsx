@@ -176,9 +176,16 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
     setError(null);
     
     try {
-      // Calculate first day of next month
-      const today = new Date();
-      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      // Advance from current expiry when available, otherwise from today.
+      // This makes each "Paid" click move forward month-by-month.
+      let baseDate = new Date();
+      if (expiryDate) {
+        const parsedExpiryDate = new Date(`${expiryDate}T00:00:00`);
+        if (!isNaN(parsedExpiryDate.getTime())) {
+          baseDate = parsedExpiryDate;
+        }
+      }
+      const nextMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 1);
       
       // Format date as YYYY-MM-DD in local timezone
       const year = nextMonth.getFullYear();
