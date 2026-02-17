@@ -17,7 +17,15 @@ import {
   testConnection, 
   saveCredentials 
 } from '@/lib/mikrotik';
-import { Wifi, User, Lock, AlertCircle, Server, ArrowRight, Cloud } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconArrowRight,
+  IconCloud,
+  IconLock,
+  IconServer,
+  IconUser,
+  IconWifi,
+} from '@tabler/icons-react';
 
 interface ConnectFormProps {
   onConnect: (credentials: MikrotikCredentials) => void;
@@ -118,9 +126,9 @@ Make sure:
         <div className="flex items-center justify-center mb-2">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center">
             {usingCloudflare ? (
-              <Cloud className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+              <IconCloud className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
             ) : (
-              <Server className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
+              <IconServer className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
             )}
           </div>
         </div>
@@ -138,7 +146,7 @@ Make sure:
         <CardContent className="space-y-4 px-4 sm:px-6">
           {error && (
             <Alert variant="destructive" className="animate-pulse text-xs sm:text-sm py-2 sm:py-3">
-              <AlertCircle className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
+              <IconAlertCircle className="h-3.5 w-3.5 mr-2 flex-shrink-0" />
               <AlertDescription className="break-words">{error}</AlertDescription>
               {debugInfo && (
                 <div className="mt-2 text-xs font-mono bg-black/10 p-2 rounded overflow-auto max-h-24 w-full">
@@ -151,7 +159,7 @@ Make sure:
           {!usingCloudflare && (
             <div className="space-y-2">
               <label htmlFor="address" className="text-sm font-medium flex items-center gap-2">
-                <Wifi className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                <IconWifi className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                 Router IP Address
               </label>
               <Input
@@ -171,7 +179,7 @@ Make sure:
           
           <div className="space-y-2">
             <label htmlFor="username" className="text-sm font-medium flex items-center gap-2">
-              <User className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+              <IconUser className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
               Username
             </label>
             <Input
@@ -186,7 +194,7 @@ Make sure:
           
           <div className="space-y-2">
             <label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-              <Lock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+              <IconLock className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
               Password
             </label>
             <Input
@@ -202,7 +210,7 @@ Make sure:
           
           <Alert className="bg-blue-50 border-blue-200 text-xs sm:text-sm py-2 sm:py-3">
             <AlertDescription className="flex items-start gap-2">
-              <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-blue-500" />
+              <IconAlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-blue-500" />
               <span>
                 {usingCloudflare 
                   ? 'Connecting via Cloudflare Tunnel. Make sure your tunnel is properly configured and running.' 
@@ -226,7 +234,7 @@ Make sure:
             ) : (
               <>
                 Connect
-                <ArrowRight className="h-3.5 w-3.5" />
+                <IconArrowRight className="h-3.5 w-3.5" />
               </>
             )}
           </Button>

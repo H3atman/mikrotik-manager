@@ -26,7 +26,7 @@ import {
   fetchActiveConnection,
   fetchPPPoEProfiles
 } from '@/lib/mikrotik';
-import { AlertCircle, Clock, Power, Edit, Wifi, Calendar, Tag, Download, Upload, User, AlertTriangle, ExternalLink, CalendarPlus } from 'lucide-react';
+import { IconAlertCircle, IconClock, IconPower, IconEdit, IconWifi, IconCalendar, IconTag, IconDownload, IconUpload, IconUser, IconAlertTriangle, IconExternalLink, IconCalendarPlus } from '@tabler/icons-react';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Dialog,
@@ -71,7 +71,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
   const [isDataLoading, setIsDataLoading] = useState(true);
   
   // Debug log for disabled state
-  console.log(`User ${user.name} - disabled: ${user.disabled}`, user);
+  console.log(`IconUser ${user.name} - disabled: ${user.disabled}`, user);
   
   // Parse expiry information from comment
   const expiryDate = parseExpiryDate(user.comment);
@@ -240,7 +240,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
   const getStatusBadgeVariant = () => {
     // Force secondary (gray) variant for disabled users
     if (user.disabled === true) {
-      console.log(`User ${user.name} is disabled, using secondary variant`);
+      console.log(`IconUser ${user.name} is disabled, using secondary variant`);
       return "secondary";
     }
     if (expired || isDueDateProfile) return "destructive";
@@ -252,7 +252,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
   const getStatusText = () => {
     // Force "Disabled" text for disabled users
     if (user.disabled === true) {
-      console.log(`User ${user.name} is disabled, showing "Disabled" text`);
+      console.log(`IconUser ${user.name} is disabled, showing "Disabled" text`);
       return "Disabled";
     }
     if (expired) return "Expired";
@@ -279,7 +279,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
   const getCardBorderColor = () => {
     // Force slate color for disabled users
     if (user.disabled === true) {
-      console.log(`User ${user.name} is disabled, using slate border`);
+      console.log(`IconUser ${user.name} is disabled, using slate border`);
       return '#94a3b8'; // Slate-400 for disabled
     } else if (expired || isDueDateProfile) {
       return '#ef4444'; // Red for expired, or Due_Date_512Kbps
@@ -294,7 +294,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
   const getCardBackgroundColor = () => {
     // Force slate background for disabled users
     if (user.disabled === true) {
-      console.log(`User ${user.name} is disabled, using slate background`);
+      console.log(`IconUser ${user.name} is disabled, using slate background`);
       return 'bg-slate-50 dark:bg-slate-800/50'; // Light slate background for disabled
     } else if (expired || isDueDateProfile) {
       return 'bg-red-50 dark:bg-red-950/40'; // Light red background for expired or Due_Date_512Kbps
@@ -315,7 +315,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
             <div>
               <CardTitle className="text-base sm:text-lg flex items-center gap-1 sm:gap-2">
-                <User 
+                <IconUser 
                   className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${user.disabled === true ? 'text-slate-400' : (expired || isDueDateProfile) ? 'text-destructive' : 'text-primary'}`}
                   style={user.disabled === true ? { color: '#94a3b8' } : {}}
                 />
@@ -338,15 +338,15 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
         </CardHeader>
         
         <CardContent className="pb-2 space-y-4 px-3 sm:px-4">
-          {/* User Details Section */}
+          {/* IconUser Details Section */}
           <div className="space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                <Tag className="h-4 w-4 flex-shrink-0" />
+                <IconTag className="h-4 w-4 flex-shrink-0" />
                 Profile
               </span>
               <span className={`text-sm font-medium ${isDueDateProfile ? "text-destructive font-bold" : ""} flex items-center gap-2`}>
-                {isDueDateProfile && <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />}
+                {isDueDateProfile && <IconAlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />}
                 {user.profile}
               </span>
             </div>
@@ -354,7 +354,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             {expiryDate && (
               <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <IconCalendar className="h-4 w-4 flex-shrink-0" />
                   Expires
                 </span>
                 <span className={`text-sm font-medium ${expired ? "text-destructive" : daysLeft !== null && daysLeft <= 5 ? "text-amber-500" : ""}`}>
@@ -368,7 +368,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             {postExpiryProfile && (
               <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <IconClock className="h-4 w-4 flex-shrink-0" />
                   After Expiry
                 </span>
                 <span className="text-sm">{postExpiryProfile}</span>
@@ -378,7 +378,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             {user['caller-id'] && (
               <div className="flex flex-wrap items-center justify-between gap-1">
                 <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  <Wifi className="h-4 w-4 flex-shrink-0" />
+                  <IconWifi className="h-4 w-4 flex-shrink-0" />
                   MAC Address
                 </span>
                 <span className="font-mono text-sm break-all">{user['caller-id']}</span>
@@ -394,7 +394,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
               </div>
             ) : dataError ? (
               <div className="flex items-center gap-2 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
+                <IconAlertCircle className="h-4 w-4" />
                 {dataError}
               </div>
             ) : (
@@ -406,14 +406,14 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between bg-secondary/20 px-3 py-2 rounded-md">
                         <span className="text-sm font-medium flex items-center gap-2">
-                          <Upload className="h-4 w-4 text-primary" />
+                          <IconUpload className="h-4 w-4 text-primary" />
                           Total Upload
                         </span>
                         <span className="text-sm font-bold">{queueStats['formatted-upload']}</span>
                       </div>
                       <div className="flex items-center justify-between bg-secondary/20 px-3 py-2 rounded-md">
                         <span className="text-sm font-medium flex items-center gap-2">
-                          <Download className="h-4 w-4 text-primary" />
+                          <IconDownload className="h-4 w-4 text-primary" />
                           Total Download
                         </span>
                         <span className="text-sm font-bold">{queueStats['formatted-download']}</span>
@@ -424,14 +424,14 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
                     <div className="space-y-2.5 pt-1">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                          <Upload className="h-4 w-4" />
+                          <IconUpload className="h-4 w-4" />
                           Current Rate
                         </span>
                         <span className="text-sm">{formatBytes(queueStats['rate'])}/s</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                          <AlertCircle className="h-4 w-4" />
+                          <IconAlertCircle className="h-4 w-4" />
                           Dropped Packets
                         </span>
                         <span className="text-sm">{formatBytes(queueStats['dropped'])}</span>
@@ -446,14 +446,14 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
+                          <IconClock className="h-4 w-4" />
                           Uptime
                         </span>
                         <span className="text-sm font-medium text-green-600">{formatUptime(activeConnection.uptime)}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                          <Wifi className="h-4 w-4" />
+                          <IconWifi className="h-4 w-4" />
                           Address
                         </span>
                         <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
                                   className="h-6 w-6 hover:bg-secondary/80"
                                   onClick={() => window.open(`http://${activeConnection.address}`, '_blank')}
                                 >
-                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  <IconExternalLink className="h-3.5 w-3.5" />
                                   <span className="sr-only">Open in browser</span>
                                 </Button>
                               </TooltipTrigger>
@@ -484,7 +484,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
                   ) : (
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
+                        <IconClock className="h-4 w-4" />
                         Status
                       </span>
                       <span className="text-sm font-medium text-yellow-600">Offline</span>
@@ -497,7 +497,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
           
           {error && (
             <div className="mt-2 text-sm text-destructive flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
+              <IconAlertCircle className="h-4 w-4" />
               {error}
             </div>
           )}
@@ -511,7 +511,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             disabled={disabled}
             className="w-full sm:w-auto h-9 sm:h-8 text-sm"
           >
-            <Edit className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
+            <IconEdit className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
             Edit Expiry
           </Button>
           <Button
@@ -521,7 +521,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             className="w-full sm:w-auto h-9 sm:h-8 text-sm bg-green-100 hover:bg-green-200 text-green-700 border border-green-300"
             title="Mark as paid - set expiry to first day of next month"
           >
-            <CalendarPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
+            <IconCalendarPlus className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
             Paid
           </Button>
           <Button
@@ -531,7 +531,7 @@ export function PPPoEUserCard({ user, credentials, onUpdate, onEditExpiry, disab
             disabled={disabled}
             className={`w-full sm:w-auto h-9 sm:h-8 text-sm ${user.disabled ? "" : "bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"}`}
           >
-            <Power className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
+            <IconPower className="h-4 w-4 sm:h-3.5 sm:w-3.5 mr-2 sm:mr-1" />
             {user.disabled ? 'Enable' : 'Disable'}
           </Button>
         </CardFooter>

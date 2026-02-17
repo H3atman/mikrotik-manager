@@ -15,7 +15,14 @@ import {
   parsePostExpiryProfile,
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
-import { AlertCircle, Save, X, Tag, Calendar, Clock } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconCalendar,
+  IconClock,
+  IconDeviceFloppy,
+  IconTag,
+  IconX,
+} from '@tabler/icons-react';
 import {
   Select,
   SelectContent,
@@ -165,14 +172,14 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
       <div className="space-y-4">
         {error && (
           <Alert variant="destructive" className="animate-pulse text-sm py-2">
-            <AlertCircle className="h-3.5 w-3.5 mr-2" />
+            <IconAlertCircle className="h-3.5 w-3.5 mr-2" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-2">
           <label htmlFor="currentProfile" className="text-sm font-medium flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 text-blue-500" />
+            <IconTag className="h-3.5 w-3.5 text-blue-500" />
             Current Profile
           </label>
           <Select
@@ -197,7 +204,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
 
         <div className="space-y-2">
           <label className="text-sm font-medium flex items-center gap-2">
-            <Calendar className="h-3.5 w-3.5 text-blue-500" />
+            <IconCalendar className="h-3.5 w-3.5 text-blue-500" />
             Expiry Date
           </label>
           <DatePickerWithNextMonth 
@@ -208,7 +215,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
 
         <div className="space-y-2">
           <label htmlFor="expiryTime" className="text-sm font-medium flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-blue-500" />
+            <IconClock className="h-3.5 w-3.5 text-blue-500" />
             Expiry Time
           </label>
           <Input
@@ -222,7 +229,7 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
 
         <div className="space-y-2">
           <label htmlFor="postExpiryProfile" className="text-sm font-medium flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 text-blue-500" />
+            <IconTag className="h-3.5 w-3.5 text-blue-500" />
             Post-Expiry Profile
           </label>
           <Select
@@ -253,14 +260,14 @@ export function PPPoEExpiryForm({ user, credentials, onSuccess, onCancel }: PPPo
           onClick={onCancel}
           disabled={loading}
         >
-          <X className="h-4 w-4 mr-1" />
+          <IconX className="h-4 w-4 mr-1" />
           Cancel
         </Button>
         <Button
           type="submit"
           disabled={loading || !expiryDate}
         >
-          <Save className="h-4 w-4 mr-1" />
+          <IconDeviceFloppy className="h-4 w-4 mr-1" />
           Save Changes
         </Button>
       </div>
