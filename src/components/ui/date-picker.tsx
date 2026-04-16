@@ -1,7 +1,7 @@
 "use client"
 
 import { addMonths, format, startOfMonth } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { IconCalendar } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ export function DatePickerWithNextMonth({
             !value && "text-muted-foreground",
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <IconCalendar className="mr-2 h-4 w-4" />
           {value ? format(value, "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>

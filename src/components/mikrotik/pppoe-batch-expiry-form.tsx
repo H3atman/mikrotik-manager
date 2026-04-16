@@ -13,7 +13,15 @@ import {
   fetchPPPoEProfiles,
   formatCommentWithExpiry
 } from '@/lib/mikrotik';
-import { AlertCircle, Save, X, Tag, Calendar, Clock, Check } from 'lucide-react';
+import {
+  IconAlertCircle,
+  IconCalendar,
+  IconCheck,
+  IconClock,
+  IconDeviceFloppy,
+  IconTag,
+  IconX,
+} from '@tabler/icons-react';
 import {
   Select,
   SelectContent,
@@ -174,7 +182,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <Alert variant="destructive" className="mx-0">
-            <AlertCircle className="h-4 w-4 mr-2" />
+            <IconAlertCircle className="h-4 w-4 mr-2" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -183,7 +191,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <IconCalendar className="h-4 w-4 text-muted-foreground" />
                 Expiry Date
               </label>
               <DatePickerWithNextMonth 
@@ -194,7 +202,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
 
             <div className="space-y-2">
               <label htmlFor="expiryTime" className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <IconClock className="h-4 w-4 text-muted-foreground" />
                 Expiry Time
               </label>
               <Input
@@ -208,7 +216,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
 
             <div className="space-y-2">
               <label htmlFor="postExpiryProfile" className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Tag className="h-4 w-4 text-muted-foreground" />
+                <IconTag className="h-4 w-4 text-muted-foreground" />
                 Post-Expiry Profile
               </label>
               <Select
@@ -247,7 +255,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
                   <ul className="text-sm space-y-1 text-destructive">
                     {progress.errors.map(({ user, error }, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <IconAlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                         <span>{user}: {error}</span>
                       </li>
                     ))}
@@ -266,7 +274,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
             disabled={loading}
             className="min-w-[80px]"
           >
-            <X className="h-4 w-4 mr-2" />
+            <IconX className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
@@ -274,7 +282,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
             disabled={loading || !expiryDate}
             className="min-w-[120px]"
           >
-            <Save className="h-4 w-4 mr-2" />
+            <IconDeviceFloppy className="h-4 w-4 mr-2" />
             {loading ? 'Updating...' : `Update ${users.length} User${users.length !== 1 ? 's' : ''}`}
           </Button>
         </div>
@@ -292,7 +300,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
           <DialogHeader className="pb-4">
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 rounded-full bg-green-50 p-3 ring-8 ring-green-50">
-                <Check className="h-8 w-8 text-green-600" />
+                <IconCheck className="h-8 w-8 text-green-600" />
               </div>
               <DialogTitle className="text-xl font-semibold text-foreground">Update Successful</DialogTitle>
               <DialogDescription className="mt-2 text-base">
@@ -312,7 +320,7 @@ export function PPPoEBatchExpiryForm({ users, credentials, onSuccess, onCancel }
               <ul className="text-sm space-y-2">
                 {progress.errors.map(({ user, error }, index) => (
                   <li key={index} className="flex items-start gap-2 text-destructive">
-                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <IconAlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>{user}: {error}</span>
                   </li>
                 ))}

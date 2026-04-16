@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   MikrotikCredentials, 
@@ -205,12 +206,10 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
           
           <div className="space-y-2 border-t pt-4">
             <div className="flex items-center space-x-2">
-              <input
+              <Checkbox
                 id="enableExpiry"
-                type="checkbox"
                 checked={enableExpiry}
-                onChange={(e) => setEnableExpiry(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                onCheckedChange={(checked) => setEnableExpiry(checked === true)}
               />
               <label htmlFor="enableExpiry" className="text-sm font-medium">
                 Enable Subscription Expiry
@@ -327,13 +326,10 @@ export function PPPoEUserForm({ credentials, onSuccess, onCancel }: PPPoEUserFor
           </div>
           
           <div className="flex items-center space-x-2">
-            <input
+            <Checkbox
               id="disabled"
-              name="disabled"
-              type="checkbox"
               checked={user.disabled}
-              onChange={e => setUser(prev => ({ ...prev, disabled: e.target.checked }))}
-              className="h-4 w-4 rounded border-gray-300 text-slate-500 focus:ring-slate-500"
+              onCheckedChange={(checked) => setUser(prev => ({ ...prev, disabled: checked === true }))}
             />
             <label htmlFor="disabled" className="text-sm font-medium flex items-center gap-1">
               Disabled

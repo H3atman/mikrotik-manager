@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { Moon, Sun } from "lucide-react"
+import { IconMoon, IconSun } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { useSyncExternalStore } from "react"
 
@@ -28,7 +28,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <Button variant="outline" size="icon" className="h-9 w-9" disabled>
-        <Sun className="h-4 w-4" />
+        <IconSun className="h-4 w-4" />
         <span className="sr-only">Toggle theme</span>
       </Button>
     )
@@ -42,7 +42,7 @@ export function ThemeToggle() {
       onClick={handleToggle}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? <IconSun className="h-4 w-4" /> : <IconMoon className="h-4 w-4" />}
     </Button>
   )
 }
